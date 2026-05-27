@@ -2612,23 +2612,7 @@ export default function App() {
     );
   }
 
-  // Floating view switcher for demo purposes
-  const ViewModeSelector = () => (
-    <div className={`fixed ${isMobileDevice ? 'bottom-20' : 'bottom-4'} right-4 z-[9999] bg-pdip-metal/90 backdrop-blur border border-red-900/35 px-2.5 py-1.5 rounded-full shadow-2xl flex items-center gap-1.5`}>
-      <button 
-        onClick={() => setIsMobileDevice(true)} 
-        className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition flex items-center gap-1.5 ${isMobileDevice ? 'bg-pdip-red text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
-      >
-        <span>📱</span> Mobile View
-      </button>
-      <button 
-        onClick={() => setIsMobileDevice(false)} 
-        className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition flex items-center gap-1.5 ${!isMobileDevice ? 'bg-pdip-red text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
-      >
-        <span>💻</span> Desktop View
-      </button>
-    </div>
-  );
+
 
   // MOBILE DEVICE LAYOUT
   if (isLoggedIn && isMobileDevice) {
@@ -2679,9 +2663,6 @@ export default function App() {
             </button>
           </div>
         </header>
-
-        {/* View Mode Switcher float */}
-        <ViewModeSelector />
 
         {/* Main scrollable body area */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
@@ -7421,9 +7402,6 @@ export default function App() {
           </div>
         );
       })()}
-
-      {/* Floating view switcher for desktop to easily test mobile mode */}
-      <ViewModeSelector />
 
     </div>
   );
