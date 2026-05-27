@@ -2563,6 +2563,14 @@ export default function App() {
             >
               Sign In / Masuk
             </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileDevice(!isMobileDevice)}
+              className="w-full bg-transparent border border-red-900/40 text-red-400 hover:text-white hover:bg-red-950/30 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
+            >
+              {isMobileDevice ? "💻 Aktifkan Tampilan Desktop" : "📱 Aktifkan Tampilan Mobile (HP)"}
+            </button>
           </form>
 
           {/* Demo account helper panel */}
