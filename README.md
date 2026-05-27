@@ -41,6 +41,13 @@ Dirancang khusus untuk mematahkan klaim sepihak dari makelar politik (broker sua
 * **Saluran Aspirasi DPRD**: Laporan aduan warga yang ditujukan langsung ke anggota legislatif fraksi PDIP DPRD Banjarnegara untuk ditanggapi.
 * **Perpesanan Privat & Laporan Lapangan**: Ruang obrolan langsung internal antar-kader (dilengkapi typing simulator & auto-reply) dan pelaporan insiden lapangan tertarget.
 
+### 8. 📱 Portal HP Khusus Mobile (Responsive Navigation)
+Sistem secara otomatis mendeteksi perangkat mobile untuk memuat halaman khusus HP yang dioptimalkan untuk pergerakan kader di lapangan:
+* **Bottom Navigation Bar**: Navigasi bawah modern (Beranda, Rekrut, Lapor, Pesan).
+* **Perekrutan downline instan**: Form pendaftaran kader baru dengan integrasi foto identitas dan pengambilan koordinat GPS presisi secara *real-time* yang otomatis terkunci ke jaringan upline perekrut.
+* **Siaran Pengumuman & Instuksi (Broadcast)**: Admin dan Pimpinan DPC dapat mengirimkan instruksi penting yang langsung tampil di halaman depan HP kader.
+* **Timeline Laporan & Chat Secure**: Memungkinkan kader melaporkan insiden lapangan dengan cepat dan melakukan chat private antar-kader dengan notifikasi unread badge.
+
 ---
 
 ## 🛠️ Tech Stack & Dependencies
