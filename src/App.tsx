@@ -82,7 +82,8 @@ function KecamatanAnalyticsSection({
   setRantingProposals,
   currentUser,
   quickCounts,
-  candidateNames 
+  candidateNames,
+  isDbConnected
 }: { 
   members: Member[]; 
   setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
@@ -92,6 +93,7 @@ function KecamatanAnalyticsSection({
   currentUser: Member;
   quickCounts: QuickCountResult[];
   candidateNames: { c1: string; c2: string; c3: string };
+  isDbConnected: boolean;
 }) {
   const [selectedKec, setSelectedKec] = useState('Banjarnegara');
 
@@ -207,10 +209,29 @@ function KecamatanAnalyticsSection({
       createdAt: new Date().toISOString().split('T')[0]
     };
 
+    if (isDbConnected) {
+      fetch('/api/ranting-proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProposal)
+      }).catch(err => console.error('Error saving proposal to database:', err));
+    }
+
     setRantingProposals(prev => [newProposal, ...prev]);
 
     if (status === 'APPROVED') {
       if (proposalMode === 'existing' && targetMemberId) {
+        const existingMember = members.find(m => m.id === targetMemberId);
+        if (existingMember) {
+          const updatedMember = { ...existingMember, role: 'ketua_ranting' as Member['role'] };
+          if (isDbConnected) {
+            fetch('/api/members', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedMember)
+            }).catch(err => console.error('Error updating member role in database:', err));
+          }
+        }
         setMembers(prev => prev.map(m => m.id === targetMemberId ? { ...m, role: 'ketua_ranting' } : m));
         pushAuditLog(`Membentuk Ranting Desa ${proposingDesa}: Mengangkat ${name} sebagai Ketua Ranting`);
       } else {
@@ -231,6 +252,13 @@ function KecamatanAnalyticsSection({
           joinDate: new Date().toISOString().split('T')[0],
           parentId: currentUser.id
         };
+        if (isDbConnected) {
+          fetch('/api/members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newMemberObj)
+          }).catch(err => console.error('Error saving new member to database:', err));
+        }
         setMembers(prev => [newMemberObj, ...prev]);
         pushAuditLog(`Membentuk Ranting Desa ${proposingDesa}: Mendaftarkan & Mengangkat ${name} sebagai Ketua Ranting`);
       }
@@ -247,10 +275,26 @@ function KecamatanAnalyticsSection({
   };
 
   const handleApproveProposal = (proposal: RantingProposal) => {
+    if (isDbConnected) {
+      fetch(`/api/ranting-proposals/${proposal.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'APPROVED' })
+      }).catch(err => console.error('Error approving proposal in database:', err));
+    }
+
     setRantingProposals(prev => prev.map(p => p.id === proposal.id ? { ...p, status: 'APPROVED' } : p));
     
     const existingMember = members.find(m => m.nik === proposal.proposedKetuaNik);
     if (existingMember) {
+      const updatedMember = { ...existingMember, role: 'ketua_ranting' as Member['role'], kecamatan: proposal.kecamatan, desa: proposal.desa };
+      if (isDbConnected) {
+        fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedMember)
+        }).catch(err => console.error('Error updating member role in database:', err));
+      }
       setMembers(prev => prev.map(m => m.id === existingMember.id ? { ...m, role: 'ketua_ranting', kecamatan: proposal.kecamatan, desa: proposal.desa } : m));
       pushAuditLog(`Menyetujui Usulan Ranting Desa ${proposal.desa}: Mengangkat ${proposal.proposedKetuaName} sebagai Ketua Ranting`);
     } else {
@@ -271,6 +315,13 @@ function KecamatanAnalyticsSection({
         joinDate: new Date().toISOString().split('T')[0],
         parentId: currentUser.id
       };
+      if (isDbConnected) {
+        fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMemberObj)
+        }).catch(err => console.error('Error saving new member in database:', err));
+      }
       setMembers(prev => [newMemberObj, ...prev]);
       pushAuditLog(`Menyetujui Usulan Ranting Desa ${proposal.desa}: Mendaftarkan & Mengangkat ${proposal.proposedKetuaName} sebagai Ketua Ranting`);
     }
@@ -278,6 +329,13 @@ function KecamatanAnalyticsSection({
   };
 
   const handleRejectProposal = (proposalId: string, name: string, desa: string) => {
+    if (isDbConnected) {
+      fetch(`/api/ranting-proposals/${proposalId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'REJECTED' })
+      }).catch(err => console.error('Error rejecting proposal in database:', err));
+    }
     setRantingProposals(prev => prev.map(p => p.id === proposalId ? { ...p, status: 'REJECTED' } : p));
     pushAuditLog(`Menolak Usulan Ranting Desa ${desa} dengan calon Ketua: ${name}`);
   };
@@ -799,6 +857,9 @@ export default function App() {
   const [treePage, setTreePage] = useState<number>(1);
   const [listPage, setListPage] = useState<number>(1);
 
+  // MySQL Database connectivity state
+  const [isDbConnected, setIsDbConnected] = useState<boolean>(false);
+
   // GeoJSON data for GIS sebaran desa
   const [geojsonData, setGeojsonData] = useState<any>(null);
 
@@ -810,6 +871,79 @@ export default function App() {
       })
       .then(data => setGeojsonData(data))
       .catch(err => console.error('Error loading geojson:', err));
+  }, []);
+
+  // Database initialization, auto-seeding, and table loading
+  useEffect(() => {
+    const initDatabase = async () => {
+      try {
+        const statusRes = await fetch('/api/status');
+        if (!statusRes.ok) throw new Error('API server status check failed');
+        const status = await statusRes.json();
+        
+        if (status.connected) {
+          setIsDbConnected(true);
+          console.log('MySQL Database connected successfully!');
+
+          if (status.needsSeeding) {
+            console.log('Database empty. Seeding database with initial data...');
+            const seedRes = await fetch('/api/seed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                members: INITIAL_MEMBERS,
+                logisticsItems: INITIAL_LOGISTICS,
+                logisticsOrders: INITIAL_ORDERS,
+                aspirations: INITIAL_ASPIRATIONS,
+                quickCounts: INITIAL_QUICK_COUNT,
+                memberReports: INITIAL_REPORTS,
+                privateMessages: INITIAL_MESSAGES
+              })
+            });
+            if (!seedRes.ok) throw new Error('Seeding failed');
+            console.log('Database seeded successfully.');
+          } else {
+            console.log('Loading database records into state...');
+            const [
+              dbMembers,
+              dbLogistics,
+              dbOrders,
+              dbAspirations,
+              dbQuickCounts,
+              dbReports,
+              dbMessages,
+              dbProposals,
+              dbLogs
+            ] = await Promise.all([
+              fetch('/api/members').then(r => r.json()),
+              fetch('/api/logistics').then(r => r.json()),
+              fetch('/api/logistics/orders').then(r => r.json()),
+              fetch('/api/aspirations').then(r => r.json()),
+              fetch('/api/quickcount').then(r => r.json()),
+              fetch('/api/reports').then(r => r.json()),
+              fetch('/api/messages').then(r => r.json()),
+              fetch('/api/ranting-proposals').then(r => r.json()),
+              fetch('/api/audit-logs').then(r => r.json())
+            ]);
+
+            if (dbMembers) setMembers(dbMembers);
+            if (dbLogistics) setLogistics(dbLogistics);
+            if (dbOrders) setOrders(dbOrders);
+            if (dbAspirations) setAspirations(dbAspirations);
+            if (dbQuickCounts) setQuickCounts(dbQuickCounts);
+            if (dbReports) setReports(dbReports);
+            if (dbMessages) setMessages(dbMessages);
+            if (dbProposals) setRantingProposals(dbProposals);
+            if (dbLogs) setAuditLogs(dbLogs);
+          }
+        }
+      } catch (error) {
+        console.warn('Backend API / MySQL Database offline. Operating in client-only mode.', error);
+        setIsDbConnected(false);
+      }
+    };
+
+    initDatabase();
   }, []);
 
   // Application Data States (synced with localStorage)
@@ -1178,6 +1312,14 @@ export default function App() {
 
   // Logistics Handlers
   const handleUpdateOrderStatus = (orderId: string, nextStatus: LogisticsOrder['status']) => {
+    if (isDbConnected) {
+      fetch(`/api/logistics/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      }).catch(err => console.error('Error updating order status in database:', err));
+    }
+
     setOrders(prevOrders => 
       prevOrders.map(o => {
         if (o.id === orderId) {
@@ -1216,6 +1358,14 @@ export default function App() {
       status: (currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') ? 'approved' : 'draft',
       createdAt: new Date().toISOString().slice(0, 16).replace('T', ' ')
     };
+
+    if (isDbConnected) {
+      fetch('/api/logistics/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrd)
+      }).catch(err => console.error('Error saving order to database:', err));
+    }
 
     // If auto-approved, deduct stock directly
     if (newOrd.status === 'approved') {
@@ -1320,6 +1470,14 @@ export default function App() {
       parentId: currentUser.id // Recruited by current user (downline tree branch)
     };
 
+    if (isDbConnected) {
+      fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberToAdd)
+      }).catch(err => console.error('Error saving member to database:', err));
+    }
+
     setMembers([...members, memberToAdd]);
     setShowAddMemberModal(false);
     // Reset form
@@ -1353,6 +1511,15 @@ export default function App() {
       status: 'pending',
       date: new Date().toISOString().split('T')[0]
     };
+
+    if (isDbConnected) {
+      fetch('/api/aspirations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAsp)
+      }).catch(err => console.error('Error saving aspiration to database:', err));
+    }
+
     setAspirations([newAsp, ...aspirations]);
     setShowAspirationModal(false);
     setNewAspiration({
@@ -1369,6 +1536,14 @@ export default function App() {
   const handleRespondAspiration = (e: React.FormEvent) => {
     e.preventDefault();
     if (!respondingAspirationId || !dewanResponseText.trim()) return;
+
+    if (isDbConnected) {
+      fetch(`/api/aspirations/${respondingAspirationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'resolved', dewanResponse: dewanResponseText })
+      }).catch(err => console.error('Error responding aspiration in database:', err));
+    }
 
     setAspirations(prev => 
       prev.map(asp => {
@@ -1405,6 +1580,14 @@ export default function App() {
       submittedBy: currentUser.name,
       timestamp: new Date().toISOString().slice(0, 16).replace('T', ' ')
     };
+
+    if (isDbConnected) {
+      fetch('/api/quickcount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newQC)
+      }).catch(err => console.error('Error saving quick count to database:', err));
+    }
 
     setQuickCounts([newQC, ...quickCounts]);
     setShowC1Modal(false);
@@ -1449,6 +1632,14 @@ export default function App() {
       targetMemberName: targetName
     };
 
+    if (isDbConnected) {
+      fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newReport)
+      }).catch(err => console.error('Error saving report to database:', err));
+    }
+
     setReports([newReport, ...reports]);
     setShowReportModal(false);
     setNewReportState({
@@ -1485,6 +1676,14 @@ export default function App() {
       timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '),
       read: true
     };
+
+    if (isDbConnected) {
+      fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMsg)
+      }).catch(err => console.error('Error saving message to database:', err));
+    }
 
     setMessages(prev => [...prev, newMsg]);
     setNewMsgContent('');
@@ -1525,10 +1724,17 @@ export default function App() {
         read: false
       };
 
+      if (isDbConnected) {
+        fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(replyMsg)
+        }).catch(err => console.error('Error saving reply message to database:', err));
+      }
+
       setMessages(prev => [...prev, replyMsg]);
     }, 1800);
   };
-
 
   // Helper to append a new audit log entry
   const pushAuditLog = (action: string) => {
@@ -1537,6 +1743,13 @@ export default function App() {
       user: currentUser.name,
       action
     };
+    if (isDbConnected) {
+      fetch('/api/audit-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser.name, action })
+      }).catch(err => console.error('Error saving audit log to database:', err));
+    }
     setAuditLogs([log, ...auditLogs].slice(0, 50));
   };
 
@@ -2547,6 +2760,10 @@ export default function App() {
                                       <button
                                         onClick={() => {
                                           if (confirm(`Apakah Anda yakin ingin menghapus ${m.name} dari database?`)) {
+                                            if (isDbConnected) {
+                                              fetch(`/api/members/${m.id}`, { method: 'DELETE' })
+                                                .catch(err => console.error('Error deleting member from database:', err));
+                                            }
                                             setMembers(members.filter(member => member.id !== m.id));
                                             pushAuditLog(`Menghapus anggota: ${m.name} (${m.ktaNumber})`);
                                           }
@@ -3383,6 +3600,7 @@ export default function App() {
               currentUser={currentUser}
               quickCounts={quickCounts}
               candidateNames={candidateNames}
+              isDbConnected={isDbConnected}
             />
           </div>
         )}
@@ -3860,6 +4078,13 @@ export default function App() {
                             type="button"
                             onClick={() => {
                               if (confirm(`Apakah Anda yakin ingin menghapus seluruh riwayat pesan dengan ${activeChatUser.name}?`)) {
+                                if (isDbConnected) {
+                                  fetch('/api/messages/clear', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userA: currentUser.id, userB: activeChatUser.id })
+                                  }).catch(err => console.error('Error clearing chat history:', err));
+                                }
                                 setMessages(prev => 
                                   prev.filter(msg => 
                                     !((msg.senderId === currentUser.id && msg.receiverId === activeChatUser.id) ||
@@ -3888,6 +4113,10 @@ export default function App() {
                                         type="button"
                                         onClick={() => {
                                           if (confirm("Hapus pesan ini secara permanen?")) {
+                                            if (isDbConnected) {
+                                              fetch(`/api/messages/${msg.id}`, { method: 'DELETE' })
+                                                .catch(err => console.error('Error deleting message:', err));
+                                            }
                                             setMessages(prev => prev.filter(m => m.id !== msg.id));
                                             pushAuditLog("Menghapus satu pesan terkirim");
                                           }
@@ -4007,6 +4236,10 @@ export default function App() {
                             type="button"
                             onClick={() => {
                               if (confirm(`Moderasi: Apakah Anda yakin ingin menghapus pesan dari "${msg.senderName}" ke "${msg.receiverName}"?`)) {
+                                if (isDbConnected) {
+                                  fetch(`/api/messages/${msg.id}`, { method: 'DELETE' })
+                                    .catch(err => console.error('Error deleting message by moderator:', err));
+                                }
                                 setMessages(prev => prev.filter(m => m.id !== msg.id));
                                 pushAuditLog(`Moderasi Pesan: Menghapus pesan dari "${msg.senderName}" ke "${msg.receiverName}"`);
                               }
