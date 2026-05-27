@@ -2614,7 +2614,7 @@ export default function App() {
 
   // Floating view switcher for demo purposes
   const ViewModeSelector = () => (
-    <div className="fixed bottom-4 right-4 z-[9999] bg-pdip-metal/90 backdrop-blur border border-red-900/35 px-2.5 py-1.5 rounded-full shadow-2xl flex items-center gap-1.5">
+    <div className={`fixed ${isMobileDevice ? 'bottom-20' : 'bottom-4'} right-4 z-[9999] bg-pdip-metal/90 backdrop-blur border border-red-900/35 px-2.5 py-1.5 rounded-full shadow-2xl flex items-center gap-1.5`}>
       <button 
         onClick={() => setIsMobileDevice(true)} 
         className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition flex items-center gap-1.5 ${isMobileDevice ? 'bg-pdip-red text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
