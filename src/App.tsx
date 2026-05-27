@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Map, BookOpen, Truck, MessageSquare, BarChart3, Plus, Search, 
-  MapPin, Award, Settings, ListCollapse, LogOut, Lock, Mail,
+  MapPin, Award, Settings, ListCollapse, LogOut, Lock, Mail, Wallet, Coins,
   Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory } from './types';
 import { 
   BANJARNEGARA_REGIONS, KECAMATAN_COORDS, INITIAL_MEMBERS, 
   INITIAL_LOGISTICS, INITIAL_ORDERS, INITIAL_ASPIRATIONS, 
-  QUIZ_QUESTIONS, INITIAL_QUICK_COUNT, INITIAL_REPORTS, INITIAL_MESSAGES
+  QUIZ_QUESTIONS, INITIAL_QUICK_COUNT, INITIAL_REPORTS, INITIAL_MESSAGES,
+  INITIAL_FUNDS, INITIAL_STOCK_HISTORY
 } from './mockData';
 import { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
 
@@ -850,7 +851,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
@@ -897,11 +898,15 @@ export default function App() {
                 aspirations: INITIAL_ASPIRATIONS,
                 quickCounts: INITIAL_QUICK_COUNT,
                 memberReports: INITIAL_REPORTS,
-                privateMessages: INITIAL_MESSAGES
+                privateMessages: INITIAL_MESSAGES,
+                operationalFunds: INITIAL_FUNDS,
+                logisticsStockHistory: INITIAL_STOCK_HISTORY
               })
             });
             if (!seedRes.ok) throw new Error('Seeding failed');
             console.log('Database seeded successfully.');
+            // Reload the page to trigger state updates from seeded DB
+            window.location.reload();
           } else {
             console.log('Loading database records into state...');
             const [
@@ -913,7 +918,9 @@ export default function App() {
               dbReports,
               dbMessages,
               dbProposals,
-              dbLogs
+              dbLogs,
+              dbFunds,
+              dbStockHistory
             ] = await Promise.all([
               fetch('/api/members').then(r => r.json()),
               fetch('/api/logistics').then(r => r.json()),
@@ -923,7 +930,9 @@ export default function App() {
               fetch('/api/reports').then(r => r.json()),
               fetch('/api/messages').then(r => r.json()),
               fetch('/api/ranting-proposals').then(r => r.json()),
-              fetch('/api/audit-logs').then(r => r.json())
+              fetch('/api/audit-logs').then(r => r.json()),
+              fetch('/api/funds').then(r => r.json()).catch(() => []),
+              fetch('/api/logistics/history').then(r => r.json()).catch(() => [])
             ]);
 
             if (dbMembers) setMembers(dbMembers);
@@ -935,6 +944,8 @@ export default function App() {
             if (dbMessages) setMessages(dbMessages);
             if (dbProposals) setRantingProposals(dbProposals);
             if (dbLogs) setAuditLogs(dbLogs);
+            if (dbFunds) setFunds(dbFunds);
+            if (dbStockHistory) setStockHistory(dbStockHistory);
           }
         }
       } catch (error) {
@@ -1062,6 +1073,31 @@ export default function App() {
     const saved = localStorage.getItem('pdip_ranting_proposals');
     return saved ? JSON.parse(saved) : [];
   });
+
+  const [funds, setFunds] = useState<OperationalFund[]>(() => {
+    const saved = localStorage.getItem('pdip_funds');
+    return saved ? JSON.parse(saved) : INITIAL_FUNDS;
+  });
+
+  const [stockHistory, setStockHistory] = useState<LogisticsStockHistory[]>(() => {
+    const saved = localStorage.getItem('pdip_stock_history');
+    return saved ? JSON.parse(saved) : INITIAL_STOCK_HISTORY;
+  });
+
+  // Funds and Stock Mutation Forms states
+  const [fundType, setFundType] = useState<'income' | 'expense'>('expense');
+  const [fundAmount, setFundAmount] = useState<number>(0);
+  const [fundCategory, setFundCategory] = useState<'Kegiatan' | 'Sosialisasi' | 'Pembuatan Media' | 'Logistik' | 'Lainnya'>('Kegiatan');
+  const [fundTitle, setFundTitle] = useState('');
+  const [fundDescription, setFundDescription] = useState('');
+
+  const [stockItemId, setStockItemId] = useState('');
+  const [stockMutationType, setStockMutationType] = useState<'stock_in' | 'stock_out'>('stock_in');
+  const [stockQuantity, setStockQuantity] = useState<number>(0);
+  const [stockNotes, setStockNotes] = useState('');
+
+  const [showStockMutationModal, setShowStockMutationModal] = useState(false);
+  const [showFundModal, setShowFundModal] = useState(false);
   
   // Find current active user profile
   const currentUser = members.find(m => m.id === currentUserId) || members[0];
@@ -1108,6 +1144,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pdip_ranting_proposals', JSON.stringify(rantingProposals));
   }, [rantingProposals]);
+  useEffect(() => {
+    localStorage.setItem('pdip_funds', JSON.stringify(funds));
+  }, [funds]);
+  useEffect(() => {
+    localStorage.setItem('pdip_stock_history', JSON.stringify(stockHistory));
+  }, [stockHistory]);
 
 
 
@@ -1384,6 +1426,107 @@ export default function App() {
       quantity: 10
     });
     pushAuditLog(`Mengajukan logistik: ${targetItem.name} (${newOrder.quantity} Pcs)`);
+  };
+
+  // Operational Funds Handlers
+  const handleAddFund = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (fundAmount <= 0 || !fundTitle.trim()) return;
+
+    const newFund: OperationalFund = {
+      id: `f-${Date.now()}`,
+      type: fundType,
+      amount: fundAmount,
+      category: fundCategory,
+      title: fundTitle,
+      description: fundDescription,
+      date: new Date().toISOString().slice(0, 10),
+      submitterId: currentUser.id,
+      submitterName: currentUser.name
+    };
+
+    if (isDbConnected) {
+      fetch('/api/funds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFund)
+      }).catch(err => console.error('Error saving transaction to database:', err));
+    }
+
+    setFunds(prev => [newFund, ...prev]);
+    setShowFundModal(false);
+    
+    // Reset form
+    setFundAmount(0);
+    setFundTitle('');
+    setFundDescription('');
+    setFundCategory('Kegiatan');
+    pushAuditLog(`Mencatat dana operasional: ${fundType === 'income' ? 'Pemasukan' : 'Pengeluaran'} - Rp ${fundAmount.toLocaleString()} (${fundTitle})`);
+  };
+
+  const handleDeleteFund = (id: string) => {
+    const target = funds.find(f => f.id === id);
+    if (!target) return;
+
+    if (confirm("Apakah Anda yakin ingin menghapus catatan transaksi ini?")) {
+      if (isDbConnected) {
+        fetch(`/api/funds/${id}`, { method: 'DELETE' })
+          .catch(err => console.error('Error deleting transaction from database:', err));
+      }
+
+      setFunds(prev => prev.filter(f => f.id !== id));
+      pushAuditLog(`Menghapus catatan dana operasional: ${target.title}`);
+    }
+  };
+
+  // Stock Mutation Handlers
+  const handleAddStockMutation = (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetItem = logistics.find(l => l.id === stockItemId);
+    if (!targetItem || stockQuantity <= 0) return;
+
+    const newMutation: LogisticsStockHistory = {
+      id: `sh-${Date.now()}`,
+      itemId: stockItemId,
+      itemName: targetItem.name,
+      type: stockMutationType,
+      quantity: stockQuantity,
+      notes: stockNotes,
+      date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      submitterName: currentUser.name
+    };
+
+    if (isDbConnected) {
+      fetch('/api/logistics/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMutation)
+      }).catch(err => console.error('Error saving stock mutation to database:', err));
+    }
+
+    // Update stock history state
+    setStockHistory(prev => [newMutation, ...prev]);
+
+    // Update logistics item stock state
+    setLogistics(prevItems => 
+      prevItems.map(item => {
+        if (item.id === stockItemId) {
+          const newStock = stockMutationType === 'stock_in' 
+            ? item.stock + stockQuantity 
+            : Math.max(0, item.stock - stockQuantity);
+          return { ...item, stock: newStock };
+        }
+        return item;
+      })
+    );
+
+    setShowStockMutationModal(false);
+    
+    // Reset form
+    setStockItemId('');
+    setStockQuantity(0);
+    setStockNotes('');
+    pushAuditLog(`Mencatat mutasi stok ${targetItem.name}: ${stockMutationType === 'stock_in' ? 'Masuk' : 'Keluar'} (${stockQuantity} Pcs)`);
   };
 
   // Photo / File Upload to Base64
@@ -2070,6 +2213,7 @@ export default function App() {
               {[
                 { name: "Super Admin", role: "SUPER ADMIN", id: "ADMIN-3304-001" },
                 { name: "H. Nuryanto, S.Sos.", role: "PIMPINAN DPC", id: "KTA-3304-0001" },
+                { name: "Adi Wijaya", role: "ADMIN LOGISTIK", id: "KTA-3304-9999" },
                 { name: "Budi Santoso", role: "KORCAM BAWANG", id: "KTA-3304-0105" },
                 { name: "Sri Rahayu", role: "KETUA RANTING", id: "KTA-3304-0320" },
                 { name: "Joko Susilo", role: "RELAWAN TPS", id: "KTA-3304-0982" },
@@ -2146,6 +2290,9 @@ export default function App() {
               { id: 'logistik', label: 'Logistik & Distribusi', icon: Truck },
               { id: 'aspirasi', label: 'Aspirasi & DPRD', icon: MessageSquare },
               { id: 'quickcount', label: 'TPS & Quick Count C1', icon: RefreshCw },
+              ...((currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') ? [
+                { id: 'pendanaan', label: 'Dana Operasional', icon: Wallet }
+              ] : []),
               { id: 'analitik', label: 'Statistik & Analitik', icon: BarChart3 },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -3240,14 +3387,30 @@ export default function App() {
                 <h2 className="text-2xl font-bold font-serif text-white flex items-center gap-2">
                   <Truck className="text-pdip-red" /> Logistik & Distribusi APK
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">Pengajuan logistik kampanye dan pemantauan status pengiriman</p>
+                <p className="text-xs text-gray-400 mt-1">Pengajuan logistik kampanye, pengelolaan stok inventaris, dan riwayat mutasi</p>
               </div>
-              <button
-                onClick={() => setShowLogisticsModal(true)}
-                className="bg-pdip-red hover:bg-pdip-brightred text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition"
-              >
-                <Plus size={16} /> Ajukan Logistik
-              </button>
+              <div className="flex items-center gap-3">
+                {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') && (
+                  <button
+                    onClick={() => {
+                      setStockItemId(logistics[0]?.id || '');
+                      setStockMutationType('stock_in');
+                      setStockQuantity(0);
+                      setStockNotes('');
+                      setShowStockMutationModal(true);
+                    }}
+                    className="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition"
+                  >
+                    <Plus size={16} /> Catat Mutasi Stok
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowLogisticsModal(true)}
+                  className="bg-pdip-red hover:bg-pdip-brightred text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition"
+                >
+                  <Plus size={16} /> Ajukan Logistik
+                </button>
+              </div>
             </div>
 
             {/* Warehouse Stock Grid */}
@@ -3281,7 +3444,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-red-950/10 text-sm">
                     {orders.filter(o => {
-                      if (currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') return true;
+                      if (currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') return true;
                       if (currentUser.role === 'korcam') return o.kecamatan === currentUser.kecamatan;
                       if (currentUser.role === 'ketua_ranting') return o.kecamatan === currentUser.kecamatan && o.desa === currentUser.desa;
                       return o.requesterName === currentUser.name;
@@ -3299,18 +3462,18 @@ export default function App() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex gap-2 justify-end">
-                            {currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || (currentUser.role === 'korcam' && o.status === 'draft') ? (
+                            {currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik' || (currentUser.role === 'korcam' && o.status === 'draft') ? (
                               <>
                                 {o.status === 'draft' && (
                                   <button onClick={() => handleUpdateOrderStatus(o.id, 'approved')} className="bg-amber-600 hover:bg-amber-500 text-[10px] font-bold px-2.5 py-1 rounded">Setujui</button>
                                 )}
-                                {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') && o.status === 'approved' && (
+                                {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') && o.status === 'approved' && (
                                   <button onClick={() => handleUpdateOrderStatus(o.id, 'packed')} className="bg-blue-600 hover:bg-blue-500 text-[10px] font-bold px-2.5 py-1 rounded">Kemas</button>
                                 )}
-                                {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') && o.status === 'packed' && (
+                                {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') && o.status === 'packed' && (
                                   <button onClick={() => handleUpdateOrderStatus(o.id, 'shipped')} className="bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold px-2.5 py-1 rounded">Kirim</button>
                                 )}
-                                {o.status === 'shipped' && (o.requesterName === currentUser.name || currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') && (
+                                {o.status === 'shipped' && (o.requesterName === currentUser.name || currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') && (
                                   <button onClick={() => handleUpdateOrderStatus(o.id, 'received')} className="bg-emerald-600 hover:bg-emerald-500 text-[10px] font-bold px-2.5 py-1 rounded">Terima</button>
                                 )}
                               </>
@@ -3323,6 +3486,216 @@ export default function App() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* Mutation history (Only visible to admin & leaders) */}
+            {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') && (
+              <div className="bg-pdip-metal rounded-xl border border-red-950/20 overflow-hidden shadow-md">
+                <div className="p-5 border-b border-red-950/20 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-300">Riwayat Aliran Mutasi Stok</h3>
+                  <span className="text-xs text-gray-400 font-mono">Pencatatan Masuk/Keluar Manual</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-pdip-darkgray text-gray-400 text-xs font-bold uppercase tracking-wider border-b border-red-950/20">
+                        <th className="px-6 py-4">Waktu</th>
+                        <th className="px-6 py-4">Nama Item</th>
+                        <th className="px-6 py-4">Tipe</th>
+                        <th className="px-6 py-4">Jumlah</th>
+                        <th className="px-6 py-4">Pencatat</th>
+                        <th className="px-6 py-4">Keterangan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-950/10 text-sm">
+                      {stockHistory.map((sh) => (
+                        <tr key={sh.id} className="hover:bg-pdip-darkgray/30 transition">
+                          <td className="px-6 py-4 text-xs font-mono text-gray-400">{sh.date}</td>
+                          <td className="px-6 py-4 font-bold text-white">{sh.itemName}</td>
+                          <td className="px-6 py-4">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+                              sh.type === 'stock_in' 
+                                ? 'bg-emerald-950/40 text-emerald-400 border-emerald-900/30' 
+                                : 'bg-red-950/40 text-red-400 border-red-900/30'
+                            }`}>
+                              {sh.type === 'stock_in' ? 'Masuk ➔' : '➔ Keluar'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-black text-gray-200">
+                            {sh.quantity.toLocaleString()} Pcs
+                          </td>
+                          <td className="px-6 py-4 text-xs text-gray-300">{sh.submitterName}</td>
+                          <td className="px-6 py-4 text-xs text-gray-400 italic max-w-xs truncate">{sh.notes || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==================== DANA OPERASIONAL VIEW ==================== */}
+        {activeTab === 'pendanaan' && (currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') && (
+          <div className="space-y-8 animate-fadeIn text-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-red-950/20 pb-6">
+              <div>
+                <h2 className="text-2xl font-bold font-serif text-white flex items-center gap-2">
+                  <Coins className="text-pdip-red" /> Dana Operasional & Pemenangan
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">Manajemen pendanaan gotong royong, kampanye, sosialisasi, dan pembuatan media</p>
+              </div>
+              <button
+                onClick={() => {
+                  setFundType('expense');
+                  setFundCategory('Kegiatan');
+                  setFundAmount(0);
+                  setFundTitle('');
+                  setFundDescription('');
+                  setShowFundModal(true);
+                }}
+                className="bg-pdip-red hover:bg-pdip-brightred text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition"
+              >
+                <Plus size={16} /> Catat Transaksi Keuangan
+              </button>
+            </div>
+
+            {/* Financial Summary Cards */}
+            {(() => {
+              const totalIncome = funds.filter(f => f.type === 'income').reduce((sum, f) => sum + f.amount, 0);
+              const totalExpense = funds.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0);
+              const balance = totalIncome - totalExpense;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-pdip-metal p-5 rounded-xl border border-red-950/20 shadow-md">
+                    <span className="text-[10px] bg-emerald-950 text-emerald-400 font-bold px-2 py-0.5 rounded uppercase font-mono">Pemasukan Kas</span>
+                    <p className="text-2xl font-black text-emerald-500 mt-2">Rp {totalIncome.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-pdip-metal p-5 rounded-xl border border-red-950/20 shadow-md">
+                    <span className="text-[10px] bg-red-950 text-red-400 font-bold px-2 py-0.5 rounded uppercase font-mono">Pengeluaran Kas</span>
+                    <p className="text-2xl font-black text-red-500 mt-2">Rp {totalExpense.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-pdip-metal p-5 rounded-xl border border-red-900/30 shadow-md border-b-2 border-pdip-red">
+                    <span className="text-[10px] bg-pdip-red text-white font-bold px-2 py-0.5 rounded uppercase font-mono">Saldo Kas Aktual</span>
+                    <p className="text-2xl font-black text-white mt-2">Rp {balance.toLocaleString()}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Charts & Summary Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Category Breakdown Pie Chart */}
+              <div className="bg-pdip-metal p-6 rounded-xl border border-red-950/20 shadow-md space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-300 border-b border-red-950/10 pb-3">Proporsi Pengeluaran Dana</h3>
+                {(() => {
+                  const expensesByCategory = funds
+                    .filter(f => f.type === 'expense')
+                    .reduce((acc, f) => {
+                      acc[f.category] = (acc[f.category] || 0) + f.amount;
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                  const pieData = Object.entries(expensesByCategory).map(([name, value]) => ({
+                    name,
+                    value
+                  }));
+
+                  const COLORS = ['#D32F2F', '#F59E0B', '#1E3A8A', '#10B981', '#6B7280'];
+
+                  if (pieData.length === 0) {
+                    return (
+                      <div className="h-64 flex items-center justify-center text-xs text-gray-500 italic">
+                        Belum ada data pengeluaran kas.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex flex-col items-center">
+                      <div className="w-full h-56">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={4}
+                              dataKey="value"
+                            >
+                              {pieData.map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: any) => `Rp ${value.toLocaleString()}`}
+                              contentStyle={{ backgroundColor: '#111', borderColor: '#333', color: '#fff' }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[10px] w-full mt-4">
+                        {pieData.map((entry, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5 truncate">
+                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                            <span className="text-gray-400 truncate">{entry.name}:</span>
+                            <strong className="text-white">Rp {entry.value.toLocaleString()}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Transactions List */}
+              <div className="bg-pdip-metal p-6 rounded-xl border border-red-950/20 shadow-md lg:col-span-2 space-y-4">
+                <div className="flex justify-between items-center border-b border-red-950/10 pb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-300">Riwayat Mutasi Arus Kas</h3>
+                  <span className="text-xs text-gray-500 font-mono">Total: {funds.length} Transaksi</span>
+                </div>
+                <div className="overflow-y-auto max-h-[320px] space-y-3 pr-1">
+                  {funds.map((f) => (
+                    <div key={f.id} className="p-4 bg-pdip-darkgray/40 border border-red-950/10 rounded-xl flex items-center justify-between hover:border-red-900/35 transition">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase ${
+                            f.type === 'income' 
+                              ? 'bg-emerald-950/40 text-emerald-400 border-emerald-900/30' 
+                              : 'bg-red-950/40 text-red-400 border-red-900/30'
+                          }`}>
+                            {f.type === 'income' ? 'Masuk' : 'Keluar'}
+                          </span>
+                          <span className="text-xs font-bold text-white">{f.title}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 max-w-md line-clamp-1">{f.description || '-'}</p>
+                        <div className="flex gap-3 text-[9px] text-gray-500">
+                          <span>Kategori: <strong>{f.category}</strong></span>
+                          <span>Tanggal: <strong>{f.date}</strong></span>
+                          <span>Pencatat: <strong>{f.submitterName}</strong></span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`font-black text-sm ${f.type === 'income' ? 'text-emerald-500' : 'text-white'}`}>
+                          {f.type === 'income' ? '+' : '-'} Rp {f.amount.toLocaleString()}
+                        </span>
+                        {(currentUser.role === 'super_admin' || currentUser.role === 'admin_logistik') && (
+                          <button 
+                            onClick={() => handleDeleteFund(f.id)}
+                            className="text-gray-500 hover:text-red-500 p-1.5 rounded bg-pdip-black/20 hover:bg-red-950/10 transition"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -4543,6 +4916,164 @@ export default function App() {
               <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
                 <button type="button" onClick={() => setShowLogisticsModal(false)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
                 <button type="submit" className="bg-pdip-red text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Kirim Ajuan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2.1. Stock Mutation Modal */}
+      {showStockMutationModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-pdip-metal border border-red-900/30 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scaleUp">
+            <div className="p-6 border-b border-red-950/20 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-white font-serif flex items-center gap-2">
+                <Truck className="text-pdip-red" /> Pencatatan Mutasi Stok
+              </h3>
+              <button onClick={() => setShowStockMutationModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleAddStockMutation} className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block font-sans">Pilih Item Logistik:</label>
+                <select
+                  value={stockItemId}
+                  onChange={(e) => setStockItemId(e.target.value)}
+                  required
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                >
+                  {logistics.map(l => (
+                    <option key={l.id} value={l.id}>{l.name} (Stok saat ini: {l.stock} Pcs)</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 font-semibold block">Tipe Mutasi:</label>
+                  <select
+                    value={stockMutationType}
+                    onChange={(e) => setStockMutationType(e.target.value as any)}
+                    className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red font-bold"
+                  >
+                    <option value="stock_in">Stok Masuk (+)</option>
+                    <option value="stock_out">Stok Keluar (-)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 font-semibold block">Jumlah (Pcs):</label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(Number(e.target.value))}
+                    className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Catatan / Keterangan:</label>
+                <textarea
+                  value={stockNotes}
+                  onChange={(e) => setStockNotes(e.target.value)}
+                  rows={3}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                  placeholder="Keterangan mutasi (misal: Penerimaan kiriman DPD, APK dipasang di Kecamatan A)..."
+                />
+              </div>
+
+              <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
+                <button type="button" onClick={() => setShowStockMutationModal(false)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
+                <button type="submit" className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Simpan Mutasi</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2.2. Fund Transaction Modal */}
+      {showFundModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-pdip-metal border border-red-900/30 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scaleUp">
+            <div className="p-6 border-b border-red-950/20 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-white font-serif flex items-center gap-2">
+                <Coins className="text-pdip-red" /> Catat Transaksi Arus Kas
+              </h3>
+              <button onClick={() => setShowFundModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleAddFund} className="p-6 space-y-4 font-sans">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 font-semibold block">Jenis Transaksi:</label>
+                  <select
+                    value={fundType}
+                    onChange={(e) => setFundType(e.target.value as any)}
+                    className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red font-bold"
+                  >
+                    <option value="expense">Pengeluaran (-)</option>
+                    <option value="income">Pemasukan (+)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 font-semibold block">Kategori:</label>
+                  <select
+                    value={fundCategory}
+                    onChange={(e) => setFundCategory(e.target.value as any)}
+                    className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                  >
+                    <option value="Kegiatan">Kegiatan</option>
+                    <option value="Sosialisasi">Sosialisasi</option>
+                    <option value="Pembuatan Media">Pembuatan Media</option>
+                    <option value="Logistik">Logistik</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Nominal (Rupiah):</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={fundAmount || ''}
+                  onChange={(e) => setFundAmount(Number(e.target.value))}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red font-mono"
+                  placeholder="Masukkan nominal Rp..."
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Nama Transaksi:</label>
+                <input
+                  type="text"
+                  required
+                  value={fundTitle}
+                  onChange={(e) => setFundTitle(e.target.value)}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                  placeholder="Judul transaksi (misal: Konsolidasi PAC)..."
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Detail / Keterangan:</label>
+                <textarea
+                  value={fundDescription}
+                  onChange={(e) => setFundDescription(e.target.value)}
+                  rows={3}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                  placeholder="Keterangan tambahan..."
+                />
+              </div>
+
+              <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
+                <button type="button" onClick={() => setShowFundModal(false)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
+                <button type="submit" className="bg-pdip-red text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Simpan Transaksi</button>
               </div>
             </form>
           </div>

@@ -127,3 +127,30 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     user VARCHAR(100) NOT NULL,
     action TEXT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. Tabel Operational Funds (Dana Operasional)
+CREATE TABLE IF NOT EXISTS operational_funds (
+    id VARCHAR(50) PRIMARY KEY,
+    type VARCHAR(20) NOT NULL, -- 'income' (pemasukan) atau 'expense' (pengeluaran)
+    amount DECIMAL(15, 2) NOT NULL,
+    category VARCHAR(50) NOT NULL, -- 'Kegiatan', 'Sosialisasi', 'Pembuatan Media', 'Lainnya'
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    date VARCHAR(30) NOT NULL,
+    submitter_id VARCHAR(50) NOT NULL,
+    submitter_name VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. Tabel Logistics Stock History (Riwayat Mutasi Stok)
+CREATE TABLE IF NOT EXISTS logistics_stock_history (
+    id VARCHAR(50) PRIMARY KEY,
+    item_id VARCHAR(50) NOT NULL,
+    item_name VARCHAR(100) NOT NULL,
+    type VARCHAR(20) NOT NULL, -- 'stock_in' atau 'stock_out'
+    quantity INT NOT NULL,
+    notes TEXT,
+    date VARCHAR(30) NOT NULL,
+    submitter_name VARCHAR(100) NOT NULL,
+    FOREIGN KEY (item_id) REFERENCES logistics_items(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

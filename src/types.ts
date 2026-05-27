@@ -3,7 +3,7 @@ export interface Member {
   name: string;
   ktaNumber: string;
   nik: string;
-  role: 'super_admin' | 'pimpinan_dpc' | 'korcam' | 'ketua_ranting' | 'anggota_dewan' | 'bapilu' | 'relawan_terdaftar' | 'anggota';
+  role: 'super_admin' | 'pimpinan_dpc' | 'korcam' | 'ketua_ranting' | 'anggota_dewan' | 'bapilu' | 'relawan_terdaftar' | 'anggota' | 'admin_logistik';
   kecamatan: string;
   desa: string;
   tps: string;
@@ -106,4 +106,27 @@ export interface RantingProposal {
   description: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
+}
+
+export interface OperationalFund {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: 'Kegiatan' | 'Sosialisasi' | 'Pembuatan Media' | 'Logistik' | 'Lainnya';
+  title: string;
+  description: string;
+  date: string;
+  submitterId: string;
+  submitterName: string;
+}
+
+export interface LogisticsStockHistory {
+  id: string;
+  itemId: string;
+  itemName: string;
+  type: 'stock_in' | 'stock_out';
+  quantity: number;
+  notes: string;
+  date: string;
+  submitterName: string;
 }

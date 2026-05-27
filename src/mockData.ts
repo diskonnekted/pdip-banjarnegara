@@ -1,4 +1,4 @@
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory } from './types';
 
 // Comprehensive map of all 20 Kecamatan and their major Desas in Kabupaten Banjarnegara
 export const BANJARNEGARA_REGIONS: Record<string, string[]> = {
@@ -98,6 +98,23 @@ export const INITIAL_MEMBERS: Member[] = [
     phone: "081299998888",
     status: "ACTIVE",
     joinDate: "2017-08-20",
+    parentId: "m-1"
+  },
+  {
+    id: "m-logistics",
+    name: "Adi Wijaya (Admin Logistik)",
+    ktaNumber: "KTA-3304-9999",
+    nik: "3304999999999999",
+    role: "admin_logistik",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    tps: "TPS 01",
+    photoUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&h=150&q=80",
+    lat: -7.3996,
+    lng: 109.6976,
+    phone: "089988887777",
+    status: "ACTIVE",
+    joinDate: "2026-05-27",
     parentId: "m-1"
   },
   {
@@ -3174,3 +3191,94 @@ export const INITIAL_MESSAGES: PrivateMessage[] = [
     read: false
   }
 ];
+
+export const INITIAL_FUNDS: OperationalFund[] = [
+  {
+    id: "f-1",
+    type: "income",
+    amount: 150000000,
+    category: "Lainnya",
+    title: "Dana Gotong Royong Awal DPC",
+    description: "Dana awal pemenangan pemilu dari kas gotong royong fraksi PDI Perjuangan.",
+    date: "2026-05-01",
+    submitterId: "m-1",
+    submitterName: "H. Nuryanto, S.Sos."
+  },
+  {
+    id: "f-2",
+    type: "expense",
+    amount: 45000000,
+    category: "Kegiatan",
+    title: "Konsolidasi Akbar DPC Banjarnegara",
+    description: "Rapat koordinasi akbar struktur DPC, PAC, dan Ranting se-Kabupaten.",
+    date: "2026-05-05",
+    submitterId: "m-0",
+    submitterName: "Admin DPC"
+  },
+  {
+    id: "f-3",
+    type: "expense",
+    amount: 25000000,
+    category: "Sosialisasi",
+    title: "Sosialisasi Ketukan Pintu Bawang",
+    description: "Operasional ketukan pintu relawan untuk pengenalan program kerja di kecamatan Bawang.",
+    date: "2026-05-12",
+    submitterId: "m-0",
+    submitterName: "Admin DPC"
+  },
+  {
+    id: "f-4",
+    type: "expense",
+    amount: 15000000,
+    category: "Pembuatan Media",
+    title: "Cetak Baliho & Reklame Jalanan",
+    description: "Pemasangan baliho kepakan sayap kebhinekaan di 10 titik jalan protokol.",
+    date: "2026-05-18",
+    submitterId: "m-0",
+    submitterName: "Admin DPC"
+  }
+];
+
+export const INITIAL_STOCK_HISTORY: LogisticsStockHistory[] = [
+  {
+    id: "sh-1",
+    itemId: "l-1",
+    itemName: "Kaos Banteng Merah Pemilu",
+    type: "stock_in",
+    quantity: 15000,
+    notes: "Penerimaan barang masuk kiriman dari DPD Jawa Tengah.",
+    date: "2026-05-02 09:00",
+    submitterName: "Admin DPC"
+  },
+  {
+    id: "sh-2",
+    itemId: "l-1",
+    itemName: "Kaos Banteng Merah Pemilu",
+    type: "stock_out",
+    quantity: 2500,
+    notes: "Distribusi kaos tahap awal untuk zona Dapil 1.",
+    date: "2026-05-10 14:00",
+    submitterName: "Admin DPC"
+  },
+  {
+    id: "sh-3",
+    itemId: "l-2",
+    itemName: "Bendera PDI Perjuangan 1.5x1m",
+    type: "stock_in",
+    quantity: 5000,
+    notes: "Penerimaan bendera dari pengadaan gotong royong caleg.",
+    date: "2026-05-03 10:30",
+    submitterName: "Admin DPC"
+  },
+  {
+    id: "sh-4",
+    itemId: "l-2",
+    itemName: "Bendera PDI Perjuangan 1.5x1m",
+    type: "stock_out",
+    quantity: 500,
+    notes: "Pemasangan bendera serentak di sepanjang jalur utama kota.",
+    date: "2026-05-11 16:00",
+    submitterName: "Admin DPC"
+  }
+];
+

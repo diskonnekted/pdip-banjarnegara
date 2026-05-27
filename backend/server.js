@@ -66,7 +66,9 @@ app.post('/api/seed', async (req, res) => {
       aspirations, 
       quickCounts, 
       memberReports, 
-      privateMessages 
+      privateMessages,
+      operationalFunds,
+      logisticsStockHistory
     } = req.body;
 
     console.log('Seeding database with frontend data...');
@@ -78,10 +80,12 @@ app.post('/api/seed', async (req, res) => {
     await connection.query('DELETE FROM ranting_proposals');
     await connection.query('DELETE FROM aspirations');
     await connection.query('DELETE FROM logistics_orders');
+    await connection.query('DELETE FROM logistics_stock_history');
     await connection.query('DELETE FROM logistics_items');
     await connection.query('UPDATE members SET parent_id = NULL');
     await connection.query('DELETE FROM members');
     await connection.query('DELETE FROM quick_count_results');
+    await connection.query('DELETE FROM operational_funds');
 
     // 1. Seed Members (Group 1: without parentId first to satisfy self-referential FK)
     if (members && members.length > 0) {
@@ -162,6 +166,26 @@ app.post('/api/seed', async (req, res) => {
         await connection.query(
           'INSERT INTO private_messages (id, sender_id, sender_name, receiver_id, receiver_name, content, timestamp, is_read) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
           [msg.id, msg.senderId, msg.senderName, msg.receiverId, msg.receiverName, msg.content, msg.timestamp, msg.read ? 1 : 0]
+        );
+      }
+    }
+
+    // 8. Seed Operational Funds
+    if (operationalFunds && operationalFunds.length > 0) {
+      for (const f of operationalFunds) {
+        await connection.query(
+          'INSERT INTO operational_funds (id, type, amount, category, title, description, date, submitter_id, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [f.id, f.type, f.amount, f.category, f.title, f.description, f.date, f.submitterId, f.submitterName]
+        );
+      }
+    }
+
+    // 9. Seed Logistics Stock History
+    if (logisticsStockHistory && logisticsStockHistory.length > 0) {
+      for (const sh of logisticsStockHistory) {
+        await connection.query(
+          'INSERT INTO logistics_stock_history (id, item_id, item_name, type, quantity, notes, date, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          [sh.id, sh.itemId, sh.itemName, sh.type, sh.quantity, sh.notes, sh.date, sh.submitterName]
         );
       }
     }
@@ -632,6 +656,108 @@ app.post('/api/audit-logs', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 10. OPERATIONAL FUNDS ROUTE ====================
+
+app.get('/api/funds', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM operational_funds ORDER BY date DESC');
+    const funds = rows.map(r => ({
+      id: r.id,
+      type: r.type,
+      amount: parseFloat(r.amount),
+      category: r.category,
+      title: r.title,
+      description: r.description,
+      date: r.date,
+      submitterId: r.submitter_id,
+      submitterName: r.submitter_name
+    }));
+    res.json(funds);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/funds', async (req, res) => {
+  try {
+    const f = req.body;
+    await pool.query(
+      'INSERT INTO operational_funds (id, type, amount, category, title, description, date, submitter_id, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [f.id, f.type, f.amount, f.category, f.title, f.description, f.date, f.submitterId, f.submitterName]
+    );
+    res.json({ success: true, transaction: f });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/funds/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM operational_funds WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 11. LOGISTICS STOCK HISTORY ROUTE ====================
+
+app.get('/api/logistics/history', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM logistics_stock_history ORDER BY date DESC');
+    const history = rows.map(r => ({
+      id: r.id,
+      itemId: r.item_id,
+      itemName: r.item_name,
+      type: r.type,
+      quantity: r.quantity,
+      notes: r.notes,
+      date: r.date,
+      submitterName: r.submitter_name
+    }));
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/logistics/history', async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const sh = req.body;
+    
+    // 1. Insert history log
+    await connection.query(
+      'INSERT INTO logistics_stock_history (id, item_id, item_name, type, quantity, notes, date, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [sh.id, sh.itemId, sh.itemName, sh.type, sh.quantity, sh.notes, sh.date, sh.submitterName]
+    );
+
+    // 2. Adjust inventory stock count in logistics_items
+    if (sh.type === 'stock_in') {
+      await connection.query(
+        'UPDATE logistics_items SET stock = stock + ? WHERE id = ?',
+        [sh.quantity, sh.itemId]
+      );
+    } else if (sh.type === 'stock_out') {
+      await connection.query(
+        'UPDATE logistics_items SET stock = GREATEST(0, stock - ?) WHERE id = ?',
+        [sh.quantity, sh.itemId]
+      );
+    }
+
+    await connection.commit();
+    res.json({ success: true, history: sh });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
   }
 });
 
