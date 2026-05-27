@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@import 'leaflet/dist/leaflet.css';
+
+@theme {
+  --color-pdip-red: #D32F2F;
+  --color-pdip-brightred: #E53935;
+  --color-pdip-darkred: #8B0000;
+  --color-pdip-black: #111111;
+  --color-pdip-metal: #1E1E1E;
+  --color-pdip-darkgray: #2A2A2A;
+  --color-pdip-gold: #FFD700;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #111111;
+  color: #f3f4f6;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+::-webkit-scrollbar-thumb {
+  background: #D32F2F;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #E53935;
+}
+
+/* Custom Leaflet overrides to match PDIP dark theme */
+.leaflet-container {
+  background: #1e1e1e !important;
+  border-radius: 0.75rem;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: #1e1e1e !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #D32F2F !important;
+  border-radius: 0.5rem;
+}
+
+.leaflet-popup-content {
+  margin: 12px 16px !important;
+}
+
+.leaflet-bar a {
+  background-color: #1e1e1e !important;
+  color: #f3f4f6 !important;
+  border-bottom: 1px solid #2a2a2a !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #D32F2F !important;
+  color: white !important;
+}
