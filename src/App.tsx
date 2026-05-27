@@ -845,6 +845,42 @@ export default function App() {
     return localStorage.getItem('pdip_current_user_id') || 'm-0';
   });
 
+  // Mobile layout trigger & tab states
+  const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => {
+    return window.innerWidth < 768;
+  });
+  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast'>('beranda');
+
+  // Broadcast / Pengumuman State
+  const [broadcasts, setBroadcasts] = useState<any[]>(() => {
+    const saved = localStorage.getItem('pdip_broadcasts');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: "b-1",
+        title: "Instruksi Konsolidasi Saksi TPS",
+        content: "Diharapkan seluruh Ketua Ranting mendata Saksi TPS di wilayah masing-masing paling lambat H-7. Pastikan dokumen C1 Plano dipahami sepenuhnya.",
+        timestamp: "2026-05-27 08:00",
+        senderName: "H. Nuryanto, S.Sos. (Ketua DPC)"
+      },
+      {
+        id: "b-2",
+        title: "Pembagian APK Tambahan",
+        content: "Pemberitahuan kepada seluruh Korcam: kaos banteng tambahan dan bendera partai gelombang ke-3 sudah tersedia di Gudang DPC Banjarnegara. Silakan berkoordinasi dengan Admin Logistik.",
+        timestamp: "2026-05-27 10:30",
+        senderName: "Sugeng Wiyono (Bapilu)"
+      }
+    ];
+  });
+
+  // Resize listener for auto mobile trigger
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileDevice(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Login Form States
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -1188,6 +1224,10 @@ export default function App() {
   }, [activities]);
 
   useEffect(() => {
+    localStorage.setItem('pdip_broadcasts', JSON.stringify(broadcasts));
+  }, [broadcasts]);
+
+  useEffect(() => {
     const hasLegislator = newActivityExecutors.some(e => e.role === 'anggota_dewan');
     if (hasLegislator) {
       const legislativeTypes = ['Reses', 'Kunjungan Dapil', 'Sosialisasi Perda', 'Lainnya (Legislatif)'];
@@ -1277,6 +1317,23 @@ export default function App() {
     photoUrl: '',
     targetMemberId: ''
   });
+
+  // Mobile-specific Form & View States
+  const [newMobileMember, setNewMobileMember] = useState({
+    name: '',
+    nik: '',
+    role: 'anggota',
+    kecamatan: 'Banjarnegara',
+    desa: 'Semarang',
+    tps: 'TPS 01',
+    phone: '',
+    photoUrl: '',
+    lat: -7.3996,
+    lng: 109.6976
+  });
+
+  const [newBroadcastTitle, setNewBroadcastTitle] = useState('');
+  const [newBroadcastContent, setNewBroadcastContent] = useState('');
 
   // Messaging States
   const [activeChatUserId, setActiveChatUserId] = useState<string | null>(null);
@@ -2087,6 +2144,102 @@ export default function App() {
     }, 1800);
   };
 
+  const handleAddMobileMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMobileMember.name || !newMobileMember.nik) {
+      alert("Nama dan NIK wajib diisi!");
+      return;
+    }
+
+    const nextId = `m-${Date.now()}`;
+    const ktaPrefix = newMobileMember.role === 'super_admin' ? 'ADMIN-3304' : 'KTA-3304';
+    const nextKta = `${ktaPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const memberToAdd: Member = {
+      id: nextId,
+      name: newMobileMember.name,
+      nik: newMobileMember.nik,
+      ktaNumber: nextKta,
+      role: newMobileMember.role as Member['role'],
+      kecamatan: newMobileMember.kecamatan,
+      desa: newMobileMember.desa,
+      tps: newMobileMember.tps,
+      phone: newMobileMember.phone || '-',
+      photoUrl: newMobileMember.photoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80",
+      lat: newMobileMember.lat,
+      lng: newMobileMember.lng,
+      status: 'ACTIVE',
+      joinDate: new Date().toISOString().split('T')[0],
+      parentId: currentUser.id // Recruited by current user (downline tree branch)
+    };
+
+    if (isDbConnected) {
+      fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberToAdd)
+      }).catch(err => console.error('Error saving member to database:', err));
+    }
+
+    setMembers(prev => [...prev, memberToAdd]);
+    
+    // Reset mobile form
+    setNewMobileMember({
+      name: '',
+      nik: '',
+      role: 'anggota',
+      kecamatan: currentUser.kecamatan || 'Banjarnegara',
+      desa: currentUser.desa || 'Semarang',
+      tps: 'TPS 01',
+      phone: '',
+      photoUrl: '',
+      lat: -7.3996,
+      lng: 109.6976
+    });
+
+    pushAuditLog(`Mendaftarkan anggota baru lewat HP: ${memberToAdd.name} (${memberToAdd.ktaNumber})`);
+    alert(`Sukses mendaftarkan ${memberToAdd.name} sebagai downline Anda!`);
+  };
+
+  const fetchMobileGPS = () => {
+    setGpsLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setNewMobileMember(prev => ({
+            ...prev,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }));
+          setGpsLoading(false);
+          alert(`Koordinat GPS Berhasil Diambil: ${position.coords.latitude}, ${position.coords.longitude}`);
+        },
+        (error) => {
+          console.error(error);
+          const coords = KECAMATAN_COORDS[newMobileMember.kecamatan] || KECAMATAN_COORDS['Banjarnegara'];
+          const offsetLat = coords.lat + (Math.random() - 0.5) * 0.01;
+          const offsetLng = coords.lng + (Math.random() - 0.5) * 0.01;
+          setNewMobileMember(prev => ({
+            ...prev,
+            lat: offsetLat,
+            lng: offsetLng
+          }));
+          setGpsLoading(false);
+          alert("Gagal mengakses GPS. Menggunakan simulasi koordinat presisi wilayah.");
+        }
+      );
+    } else {
+      const coords = KECAMATAN_COORDS[newMobileMember.kecamatan] || KECAMATAN_COORDS['Banjarnegara'];
+      setNewMobileMember(prev => ({
+        ...prev,
+        lat: coords.lat + (Math.random() - 0.5) * 0.01,
+        lng: coords.lng + (Math.random() - 0.5) * 0.01
+      }));
+      setGpsLoading(false);
+      alert("Browser tidak mendukung GPS. Menggunakan simulasi koordinat wilayah.");
+    }
+  };
+
   // Helper to append a new audit log entry
   const pushAuditLog = (action: string) => {
     const log = {
@@ -2447,6 +2600,641 @@ export default function App() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Floating view switcher for demo purposes
+  const ViewModeSelector = () => (
+    <div className="fixed bottom-4 right-4 z-[9999] bg-pdip-metal/90 backdrop-blur border border-red-900/35 px-2.5 py-1.5 rounded-full shadow-2xl flex items-center gap-1.5">
+      <button 
+        onClick={() => setIsMobileDevice(true)} 
+        className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition flex items-center gap-1.5 ${isMobileDevice ? 'bg-pdip-red text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+      >
+        <span>📱</span> Mobile View
+      </button>
+      <button 
+        onClick={() => setIsMobileDevice(false)} 
+        className={`px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider uppercase transition flex items-center gap-1.5 ${!isMobileDevice ? 'bg-pdip-red text-white shadow-md' : 'text-gray-400 hover:text-white'}`}
+      >
+        <span>💻</span> Desktop View
+      </button>
+    </div>
+  );
+
+  // MOBILE DEVICE LAYOUT
+  if (isLoggedIn && isMobileDevice) {
+    const mobileDownlines = members.filter(m => m.parentId === currentUser.id);
+    const totalUnreadMessages = messages.filter(m => m.receiverId === currentUser.id && !m.read).length;
+
+    // Handle broadcast submit (for admin roles)
+    const handleAddBroadcast = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newBroadcastTitle.trim() || !newBroadcastContent.trim()) {
+        alert("Judul dan isi pengumuman wajib diisi!");
+        return;
+      }
+      const newBC = {
+        id: `b-${Date.now()}`,
+        title: newBroadcastTitle.trim(),
+        content: newBroadcastContent.trim(),
+        timestamp: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        senderName: `${currentUser.name} (${currentUser.role.replace('_', ' ').toUpperCase()})`
+      };
+      setBroadcasts([newBC, ...broadcasts]);
+      setNewBroadcastTitle('');
+      setNewBroadcastContent('');
+      alert("Pengumuman broadcast berhasil disiarkan!");
+    };
+
+    return (
+      <div className="min-h-screen bg-pdip-black text-gray-100 flex flex-col font-sans relative pb-20">
+        
+        {/* Header */}
+        <header className="bg-pdip-metal border-b border-red-900/30 px-4 py-3 sticky top-0 z-40 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="PDI-P logo" className="w-8 h-8 object-contain" />
+            <div>
+              <span className="font-bold text-xs text-red-500 font-serif block tracking-wider leading-none">PDI PERJUANGAN</span>
+              <span className="text-[8px] text-gray-400 block mt-0.5">DPC Banjarnegara - Portal HP</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2.5">
+            <div className="text-right">
+              <span className="text-[9px] bg-red-950/80 text-red-400 border border-red-900/25 px-2 py-0.5 rounded-full font-bold block max-w-[90px] truncate">
+                {currentUser.name}
+              </span>
+            </div>
+            <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 p-1 bg-pdip-darkgray rounded">
+              <LogOut size={14} />
+            </button>
+          </div>
+        </header>
+
+        {/* View Mode Switcher float */}
+        <ViewModeSelector />
+
+        {/* Main scrollable body area */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+          
+          {/* TAB 1: BERANDA */}
+          {mobileTab === 'beranda' && (
+            <div className="space-y-5 animate-fadeIn">
+              
+              {/* Profile Card */}
+              <div className="bg-gradient-to-r from-pdip-darkred/40 via-pdip-metal to-pdip-metal border border-red-900/25 p-4 rounded-2xl flex items-center gap-4 shadow-lg">
+                <img src={currentUser.photoUrl} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-red-500 shadow-md shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-[9px] text-red-400 font-bold uppercase tracking-wider block">Kader Perekrut</span>
+                  <h3 className="font-bold text-sm text-white truncate leading-tight">{currentUser.name}</h3>
+                  <span className="text-[8px] bg-pdip-black text-gray-400 border border-red-900/20 px-1.5 py-0.5 rounded block w-max mt-1 font-semibold uppercase">
+                    {currentUser.role.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick statistics widgets */}
+              <div className="grid grid-cols-2 gap-3.5">
+                <div className="bg-pdip-metal p-3 rounded-xl border border-red-950/20 flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Downline Anda</span>
+                  <h4 className="text-xl font-black text-white mt-1.5">{mobileDownlines.length} <span className="text-[10px] text-gray-500 font-normal">Kader</span></h4>
+                </div>
+                <div className="bg-pdip-metal p-3 rounded-xl border border-red-950/20 flex flex-col justify-between">
+                  <span className="text-[9px] text-gray-400 font-bold uppercase">Wilayah Tugas</span>
+                  <h4 className="text-xs font-bold text-red-400 truncate mt-2">{currentUser.kecamatan}</h4>
+                </div>
+              </div>
+
+              {/* Announcement creation for admins */}
+              {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'bapilu') && (
+                <div className="bg-pdip-metal p-4 rounded-xl border border-red-950/20 shadow space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wide text-pdip-gold flex items-center gap-1">
+                    📢 Siarkan Pengumuman (Admin)
+                  </h4>
+                  <form onSubmit={handleAddBroadcast} className="space-y-2.5">
+                    <input 
+                      type="text" 
+                      placeholder="Judul pengumuman..."
+                      value={newBroadcastTitle}
+                      onChange={(e) => setNewBroadcastTitle(e.target.value)}
+                      required
+                      className="w-full bg-pdip-black text-xs text-white px-3 py-2 border border-red-900/20 rounded-lg focus:outline-none focus:border-pdip-red"
+                    />
+                    <textarea 
+                      placeholder="Tulis pesan pengumuman untuk seluruh kader..."
+                      value={newBroadcastContent}
+                      onChange={(e) => setNewBroadcastContent(e.target.value)}
+                      required
+                      rows={2}
+                      className="w-full bg-pdip-black text-xs text-white px-3 py-2 border border-red-900/20 rounded-lg focus:outline-none focus:border-pdip-red resize-none"
+                    />
+                    <button type="submit" className="w-full bg-pdip-red hover:bg-pdip-brightred text-white py-2 rounded-lg text-xs font-bold transition">
+                      Kirim Broadcast / Siarkan
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Broadcast announcement feed */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Pengumuman & Instruksi Resmi</h4>
+                {broadcasts.length > 0 ? (
+                  <div className="space-y-3">
+                    {broadcasts.map(bc => (
+                      <div key={bc.id} className="bg-pdip-metal p-4 rounded-xl border border-red-900/15 shadow-sm space-y-2.5 animate-fadeIn">
+                        <div className="flex justify-between items-start gap-2">
+                          <h5 className="font-bold text-xs text-white">{bc.title}</h5>
+                          <span className="text-[8px] text-gray-500 font-mono shrink-0">{bc.timestamp}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-300 leading-relaxed font-sans">{bc.content}</p>
+                        <div className="pt-2 border-t border-red-950/10 flex justify-between items-center text-[9px]">
+                          <span className="text-red-400 font-semibold">{bc.senderName}</span>
+                          <span className="text-[8px] bg-red-950/40 text-red-500 px-1.5 py-0.5 rounded border border-red-900/20 uppercase font-black tracking-wider">RESMI</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 bg-pdip-metal/40 border border-red-950/15 rounded-xl text-center text-xs text-gray-500">
+                    Belum ada pengumuman masuk.
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 2: REKRUT */}
+          {mobileTab === 'rekrut' && (
+            <div className="space-y-5 animate-fadeIn">
+              
+              <div className="bg-pdip-metal p-4 rounded-xl border border-red-950/20 shadow-md space-y-4">
+                <div className="border-b border-red-950/10 pb-2">
+                  <h3 className="font-bold text-xs text-white uppercase tracking-wider">Form Perekrutan Downline Baru</h3>
+                  <p className="text-[9px] text-gray-400 mt-0.5">Pendataan presisi anggota berbasis foto dan koordinat GPS.</p>
+                </div>
+
+                <form onSubmit={handleAddMobileMember} className="space-y-3">
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold">Nama Lengkap Anggota:</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Nama lengkap sesuai KTP..."
+                      value={newMobileMember.name}
+                      onChange={(e) => setNewMobileMember({...newMobileMember, name: e.target.value})}
+                      className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold">NIK (16 Digit KTP):</label>
+                    <input 
+                      type="text" 
+                      required 
+                      maxLength={16}
+                      pattern="[0-9]{16}"
+                      placeholder="3304..."
+                      value={newMobileMember.nik}
+                      onChange={(e) => setNewMobileMember({...newMobileMember, nik: e.target.value})}
+                      className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2.5 text-white font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold">No HP / WhatsApp:</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="08..."
+                      value={newMobileMember.phone}
+                      onChange={(e) => setNewMobileMember({...newMobileMember, phone: e.target.value})}
+                      className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 uppercase font-semibold">Kecamatan:</label>
+                      <select 
+                        value={newMobileMember.kecamatan}
+                        onChange={(e) => {
+                          const kec = e.target.value;
+                          setNewMobileMember({
+                            ...newMobileMember,
+                            kecamatan: kec,
+                            desa: BANJARNEGARA_REGIONS[kec][0],
+                            lat: KECAMATAN_COORDS[kec].lat + (Math.random() - 0.5) * 0.01,
+                            lng: KECAMATAN_COORDS[kec].lng + (Math.random() - 0.5) * 0.01
+                          });
+                        }}
+                        className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2 text-white"
+                      >
+                        {Object.keys(BANJARNEGARA_REGIONS).map(kec => (
+                          <option key={kec} value={kec}>{kec}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 uppercase font-semibold">Desa:</label>
+                      <select 
+                        value={newMobileMember.desa}
+                        onChange={(e) => setNewMobileMember({...newMobileMember, desa: e.target.value})}
+                        className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2 text-white"
+                      >
+                        {BANJARNEGARA_REGIONS[newMobileMember.kecamatan].map(des => (
+                          <option key={des} value={des}>{des}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 uppercase font-semibold">TPS Pilihan:</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="TPS 01"
+                        value={newMobileMember.tps}
+                        onChange={(e) => setNewMobileMember({...newMobileMember, tps: e.target.value})}
+                        className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2 text-white"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 uppercase font-semibold">Jabatan/Role:</label>
+                      <select 
+                        value={newMobileMember.role}
+                        onChange={(e) => setNewMobileMember({...newMobileMember, role: e.target.value})}
+                        className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2 text-white"
+                      >
+                        <option value="anggota">Anggota Biasa</option>
+                        <option value="relawan_terdaftar">Relawan / Saksi TPS</option>
+                        <option value="ketua_ranting">Ketua Ranting</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Camera / Photo Upload Widget */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold block">Foto KTA / Wajah:</label>
+                    <div className="flex items-center gap-3 p-2 bg-pdip-black border border-red-900/20 rounded-lg">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        id="mobile-photo-upload"
+                        onChange={(e) => handlePhotoUpload(e, (url) => setNewMobileMember({...newMobileMember, photoUrl: url}))}
+                        className="hidden"
+                      />
+                      <label htmlFor="mobile-photo-upload" className="bg-pdip-darkgray hover:bg-gray-800 text-[10px] font-bold px-3 py-1.5 border border-red-900/30 rounded cursor-pointer transition flex items-center gap-1">
+                        <Upload size={12} /> Pilih Foto
+                      </label>
+                      {newMobileMember.photoUrl ? (
+                        <img src={newMobileMember.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-red-500 shadow-sm" />
+                      ) : (
+                        <span className="text-[9px] text-gray-500">Pratinjau kosong</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* GPS Spasial */}
+                  <div className="space-y-1.5 pt-2">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold block">Koordinat Rumah (GPS):</label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-pdip-black border border-red-900/20 rounded-lg px-3 py-2 text-[10px] font-mono text-gray-300 flex items-center justify-between">
+                        <span>{newMobileMember.lat.toFixed(6)}, {newMobileMember.lng.toFixed(6)}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        disabled={gpsLoading}
+                        onClick={fetchMobileGPS}
+                        className="bg-pdip-red hover:bg-pdip-brightred text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition disabled:opacity-50"
+                      >
+                        {gpsLoading ? <RefreshCw size={12} className="animate-spin" /> : <MapPin size={12} />} GPS
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" className="w-full bg-gradient-to-r from-pdip-red to-pdip-darkred hover:from-pdip-brightred hover:to-pdip-red text-white py-2.5 rounded-lg text-xs font-bold shadow-md transition pt-2">
+                    Simpan Anggota Baru
+                  </button>
+
+                </form>
+              </div>
+
+              {/* Recruited downlines list */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Jaringan Anggota Baru (Kader Downline Anda)</h4>
+                {mobileDownlines.length > 0 ? (
+                  <div className="space-y-2">
+                    {mobileDownlines.map(m => (
+                      <div key={m.id} className="bg-pdip-metal p-3 rounded-xl border border-red-950/20 shadow-sm flex items-center gap-3">
+                        <img src={m.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-red-900/30 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <h5 className="font-bold text-xs text-white truncate">{m.name}</h5>
+                          <span className="text-[9px] text-red-400 font-mono block leading-none mt-0.5">{m.ktaNumber}</span>
+                          <span className="text-[8px] text-gray-400 block mt-1 font-semibold uppercase">{m.role.replace('_', ' ')} &bull; {m.desa}</span>
+                        </div>
+                        <div className="text-right text-[8px] text-gray-500 font-mono">
+                          {m.lat.toFixed(4)}, {m.lng.toFixed(4)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 bg-pdip-metal/40 border border-red-950/15 rounded-xl text-center text-xs text-gray-500">
+                    Anda belum mendaftarkan kader downline lewat aplikasi ini.
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 3: LAPOR */}
+          {mobileTab === 'lapor' && (
+            <div className="space-y-5 animate-fadeIn">
+              
+              <div className="bg-pdip-metal p-4 rounded-xl border border-red-950/20 shadow-md space-y-4">
+                <div className="border-b border-red-950/10 pb-2">
+                  <h3 className="font-bold text-xs text-white uppercase tracking-wider">Kirim Laporan Lapangan</h3>
+                  <p className="text-[9px] text-gray-400 mt-0.5">Unggah insiden, temuan lapangan, atau kegiatan partai.</p>
+                </div>
+
+                <form onSubmit={handleAddReport} className="space-y-3">
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold">Judul Kejadian / Laporan:</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Contoh: Temuan APK Rusak di desa..."
+                      value={newReportState.title}
+                      onChange={(e) => setNewReportState({...newReportState, title: e.target.value})}
+                      className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2.5 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold">Kategori Laporan:</label>
+                    <select 
+                      value={newReportState.category}
+                      onChange={(e) => setNewReportState({...newReportState, category: e.target.value as any})}
+                      className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2 text-white"
+                    >
+                      <option value="Kegiatan Rutin">Kegiatan Rutin</option>
+                      <option value="Insiden">Insiden / Pelanggaran</option>
+                      <option value="Darurat">Darurat Lapangan</option>
+                      <option value="Perekrutan">Perekrutan Massa</option>
+                      <option value="Lainnya">Kategori Lainnya</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold">Detail Kejadian:</label>
+                    <textarea 
+                      required 
+                      rows={3}
+                      placeholder="Tuliskan penjelasan lengkap terkait laporan atau kejadian lapangan..."
+                      value={newReportState.details}
+                      onChange={(e) => setNewReportState({...newReportState, details: e.target.value})}
+                      className="w-full bg-pdip-black text-xs border border-red-900/35 rounded-lg p-2.5 text-white resize-none"
+                    />
+                  </div>
+
+                  {/* Report photo selection */}
+                  <div className="space-y-1.5 pt-1">
+                    <label className="text-[10px] text-gray-400 uppercase font-semibold block">Foto Bukti / Dokumentasi:</label>
+                    <div className="flex items-center gap-3 p-2 bg-pdip-black border border-red-900/20 rounded-lg">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        id="mobile-report-photo"
+                        onChange={(e) => handlePhotoUpload(e, (url) => setNewReportState({...newReportState, photoUrl: url}))}
+                        className="hidden"
+                      />
+                      <label htmlFor="mobile-report-photo" className="bg-pdip-darkgray hover:bg-gray-800 text-[10px] font-bold px-3 py-1.5 border border-red-900/30 rounded cursor-pointer transition flex items-center gap-1">
+                        <Upload size={12} /> Ambil Foto
+                      </label>
+                      {newReportState.photoUrl ? (
+                        <img src={newReportState.photoUrl} alt="" className="w-10 h-8 object-cover border border-red-500 rounded" />
+                      ) : (
+                        <span className="text-[9px] text-gray-500">Pratinjau kosong</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button type="submit" className="w-full bg-pdip-red hover:bg-pdip-brightred text-white py-2 rounded-lg text-xs font-bold shadow transition mt-2">
+                    Kirim Laporan ke DPC
+                  </button>
+
+                </form>
+              </div>
+
+              {/* User reports list */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Daftar Laporan Anda</h4>
+                {reports.filter(r => r.submitterId === currentUser.id).length > 0 ? (
+                  <div className="space-y-2">
+                    {reports.filter(r => r.submitterId === currentUser.id).map(r => (
+                      <div key={r.id} className="bg-pdip-metal p-3.5 rounded-xl border border-red-950/20 shadow-sm space-y-2.5">
+                        <div className="flex justify-between items-start gap-2">
+                          <h5 className="font-bold text-xs text-white">{r.title}</h5>
+                          <span className="text-[8px] bg-red-950/50 text-red-400 border border-red-900/25 px-2 py-0.5 rounded font-mono shrink-0">{r.category}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-300 leading-normal font-sans">{r.details}</p>
+                        {r.photoUrl && (
+                          <img src={r.photoUrl} alt="" className="w-full h-32 object-cover rounded-lg border border-red-950/30" />
+                        )}
+                        <div className="flex justify-between items-center text-[8px] text-gray-500 pt-1 border-t border-red-950/10">
+                          <span>Wilayah: {r.kecamatan}</span>
+                          <span>{r.timestamp}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 bg-pdip-metal/40 border border-red-950/15 rounded-xl text-center text-xs text-gray-500">
+                    Anda belum mengirimkan laporan apapun hari ini.
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 4: PESAN PRIVATE */}
+          {mobileTab === 'pesan_broadcast' && (
+            <div className="space-y-5 animate-fadeIn">
+              
+              {/* Contact list for chats */}
+              <div className="bg-pdip-metal p-4 rounded-xl border border-red-950/20 shadow-md space-y-4">
+                <div className="border-b border-red-950/10 pb-2">
+                  <h3 className="font-bold text-xs text-white uppercase tracking-wider">Perpesanan Private Antar Kader</h3>
+                  <p className="text-[9px] text-gray-400 mt-0.5">Pilih salah satu kontak di bawah untuk memulai chat secure.</p>
+                </div>
+
+                {/* Filter and search contact */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+                    <Search size={12} />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Cari kontak kader..."
+                    value={contactSearch}
+                    onChange={(e) => setContactSearch(e.target.value)}
+                    className="w-full bg-pdip-black text-[11px] text-white pl-8 pr-4 py-2 border border-red-900/20 rounded-lg focus:outline-none focus:border-pdip-red"
+                  />
+                </div>
+
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {members
+                    .filter(m => m.id !== currentUser.id && m.name.toLowerCase().includes(contactSearch.toLowerCase()))
+                    .map(m => {
+                      const hasUnread = messages.some(msg => msg.senderId === m.id && msg.receiverId === currentUser.id && !msg.read);
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => setActiveChatUserId(m.id)}
+                          className={`w-full p-2 rounded-lg flex items-center gap-2.5 text-left border transition ${
+                            activeChatUserId === m.id
+                              ? 'bg-pdip-red/20 border-pdip-red'
+                              : 'bg-pdip-black/30 border-red-950/10 hover:bg-pdip-black/60'
+                          }`}
+                        >
+                          <img src={m.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-red-900/20 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold text-xs text-white block truncate leading-none">{m.name}</span>
+                            <span className="text-[8px] text-gray-400 block mt-1 uppercase">{m.role.replace('_', ' ')}</span>
+                          </div>
+                          {hasUnread && (
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Chat room area */}
+              <div className="bg-pdip-metal rounded-xl border border-red-950/20 shadow-md overflow-hidden flex flex-col min-h-[300px]">
+                {activeChatUserId ? (
+                  (() => {
+                    const activeChatUser = members.find(m => m.id === activeChatUserId);
+                    if (!activeChatUser) return null;
+
+                    // Filter chat history
+                    const chatHistory = messages.filter(msg => 
+                      (msg.senderId === currentUser.id && msg.receiverId === activeChatUser.id) ||
+                      (msg.senderId === activeChatUser.id && msg.receiverId === currentUser.id)
+                    );
+
+                    return (
+                      <>
+                        <div className="bg-pdip-darkgray/40 px-4 py-2.5 border-b border-red-950/20 flex items-center gap-2.5">
+                          <img src={activeChatUser.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-red-500 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold text-xs text-white block truncate leading-none">{activeChatUser.name}</span>
+                            <span className="text-[8px] text-gray-400 block mt-0.5 uppercase tracking-wider">{activeChatUser.role.replace('_', ' ')}</span>
+                          </div>
+                        </div>
+
+                        {/* Messages panel */}
+                        <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-pdip-black/20 max-h-[220px]">
+                          {chatHistory.length > 0 ? (
+                            chatHistory.map((msg) => {
+                              const isMe = msg.senderId === currentUser.id;
+                              return (
+                                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
+                                  <div className={`max-w-[80%] p-2.5 rounded-xl border text-[11px] leading-normal shadow-sm space-y-1 ${
+                                    isMe 
+                                      ? 'bg-pdip-red text-white border-red-900/35 rounded-br-none' 
+                                      : 'bg-pdip-darkgray text-gray-200 border-red-955/15 rounded-bl-none'
+                                  }`}>
+                                    <p>{msg.content}</p>
+                                    <span className="text-[7px] text-gray-400 block text-right font-mono leading-none">{msg.timestamp}</span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div className="h-full flex items-center justify-center text-[10px] text-gray-500 p-8 text-center">
+                              Mulai obrolan dengan {activeChatUser.name}.
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Send message form */}
+                        <form onSubmit={handleSendMsg} className="p-2.5 bg-pdip-darkgray/30 border-t border-red-950/20 flex gap-2">
+                          <input
+                            type="text"
+                            required
+                            value={newMsgContent}
+                            onChange={(e) => setNewMsgContent(e.target.value)}
+                            placeholder="Tulis pesan Anda..."
+                            className="flex-1 bg-pdip-black text-xs text-white px-3 py-2 border border-red-900/20 rounded-lg focus:outline-none focus:border-pdip-red"
+                          />
+                          <button
+                            type="submit"
+                            className="bg-pdip-red hover:bg-pdip-brightred text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0"
+                          >
+                            <Send size={11} /> Kirim
+                          </button>
+                        </form>
+                      </>
+                    );
+                  })()
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-gray-500 text-[10px] space-y-2 p-8 text-center">
+                    <Mail size={24} className="text-gray-600 animate-bounce" />
+                    <span>Silakan pilih kontak kader di atas untuk bertukar pesan.</span>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+        </div>
+
+        {/* BOTTOM NAVIGATION BAR */}
+        <nav className="fixed bottom-0 inset-x-0 bg-pdip-metal/95 backdrop-blur border-t border-red-900/20 h-16 flex items-center justify-around z-50 shadow-2xl">
+          {[
+            { id: 'beranda', label: 'Beranda', icon: Shield },
+            { id: 'rekrut', label: 'Rekrut', icon: Plus },
+            { id: 'lapor', label: 'Lapor', icon: Award },
+            { id: 'pesan_broadcast', label: 'Pesan', icon: Mail, badge: totalUnreadMessages }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = mobileTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setMobileTab(tab.id as any)}
+                className="flex flex-col items-center justify-center relative flex-1 h-full py-1 text-center"
+              >
+                <div className={`p-1.5 rounded-xl transition ${isActive ? 'text-red-500 bg-red-950/20' : 'text-gray-400'}`}>
+                  <Icon size={18} />
+                </div>
+                <span className={`text-[8px] mt-0.5 font-bold uppercase tracking-wider leading-none ${isActive ? 'text-white' : 'text-gray-500'}`}>
+                  {tab.label}
+                </span>
+                
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className="absolute top-2.5 right-6 bg-pdip-red text-white text-[7px] font-black px-1.5 py-0.5 rounded-full border border-red-950 animate-pulse">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
       </div>
     );
   }
@@ -6625,6 +7413,9 @@ export default function App() {
           </div>
         );
       })()}
+
+      {/* Floating view switcher for desktop to easily test mobile mode */}
+      <ViewModeSelector />
 
     </div>
   );
