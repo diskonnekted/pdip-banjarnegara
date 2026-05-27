@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -632,6 +633,21 @@ app.post('/api/audit-logs', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Serve static frontend files if dist folder exists
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) {
+      res.status(404).send('Frontend build not found. Please run "npm run build" in the root directory of the project.');
+    }
+  });
 });
 
 // Start Server
