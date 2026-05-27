@@ -1,4 +1,4 @@
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory, PartyActivity } from './types';
 
 // Comprehensive map of all 20 Kecamatan and their major Desas in Kabupaten Banjarnegara
 export const BANJARNEGARA_REGIONS: Record<string, string[]> = {
@@ -3279,6 +3279,61 @@ export const INITIAL_STOCK_HISTORY: LogisticsStockHistory[] = [
     notes: "Pemasangan bendera serentak di sepanjang jalur utama kota.",
     date: "2026-05-11 16:00",
     submitterName: "Admin DPC"
+  }
+];
+
+export const INITIAL_ACTIVITIES: PartyActivity[] = [
+  {
+    id: "act-1",
+    title: "Reses Masa Sidang II Dapil 1",
+    type: "Reses",
+    executors: [
+      { id: "m-1", name: "H. Nuryanto, S.Sos.", role: "pimpinan_dpc" }
+    ],
+    date: "2026-05-15",
+    location: "Aula Kecamatan Banjarnegara",
+    status: "selesai",
+    budgetTransport: 5000000,
+    budgetMeals: 7500000,
+    budgetAccommodation: 0,
+    budgetOther: 1500000,
+    budgetTotal: 14000000,
+    reportDescription: "Kegiatan reses berjalan lancar dihadiri oleh 150 tokoh masyarakat. Aspirasi terfokus pada perbaikan irigasi pertanian dan bantuan modal UMKM.",
+    reportPhoto: "/tps.png"
+  },
+  {
+    id: "act-2",
+    title: "Konsolidasi Kader PAC & Ranting Bawang",
+    type: "Konsolidasi PAC",
+    executors: [
+      { id: "m-3", name: "Budi Santoso", role: "korcam" },
+      { id: "m-4", name: "Sri Rahayu", role: "ketua_ranting" }
+    ],
+    date: "2026-05-28",
+    location: "Posko Ranting Mantrianom",
+    status: "disetujui",
+    budgetTransport: 2500000,
+    budgetMeals: 4000000,
+    budgetAccommodation: 0,
+    budgetOther: 500000,
+    budgetTotal: 7000000
+  },
+  {
+    id: "act-3",
+    title: "Bakti Sosial & Pembagian Sembako Wong Cilik",
+    type: "Kerja Bakti Sosial",
+    executors: [
+      { id: "m-2", name: "Sugeng Wiyono", role: "bapilu" },
+      { id: "m-logistics", name: "Adi Wijaya", role: "admin_logistik" }
+    ],
+    date: "2026-06-02",
+    location: "Desa Kalitengah, Purwanegara",
+    status: "rencana",
+    budgetTransport: 1500000,
+    budgetMeals: 3000000,
+    budgetAccommodation: 0,
+    budgetOther: 10000000,
+    budgetTotal: 14500000
   }
 ];
 

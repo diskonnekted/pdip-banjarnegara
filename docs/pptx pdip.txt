@@ -348,3 +348,24 @@ Saya dapat menyediakan:
 4. **Script Presenter** — Catatan pembicara per slide untuk memudahkan delivery
 
 **Mau saya generate file PowerPoint-nya?** Saya bisa buatkan dalam format yang dapat langsung Anda edit dan sesuaikan dengan identitas visual DPC Banjarnegara. 🚩✨
+
+Domain Name
+pdipbna.rapidnet.id
+Node.js Version
+Node 22 LTS
+App Port
+5005
+Site User
+rapidnet-pdipbna
+The main SSH User for the site.
+Site User Password
+Tu6x3MattxQngywmhRJV
+Generate new password
+New Database
+Database Name
+pdipbnadb
+Database User Name
+pdipa
+Database User Password
+Q1FsY0SZrgRpqKJJdTPt
+Generate new password

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, Map, BookOpen, Truck, MessageSquare, BarChart3, Plus, Search, 
+  Users, Map, BookOpen, Truck, MessageSquare, BarChart3, Plus, Search, Calendar,
   MapPin, Award, Settings, ListCollapse, LogOut, Lock, Mail, Wallet, Coins,
   Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity } from './types';
 import { 
   BANJARNEGARA_REGIONS, KECAMATAN_COORDS, INITIAL_MEMBERS, 
   INITIAL_LOGISTICS, INITIAL_ORDERS, INITIAL_ASPIRATIONS, 
   QUIZ_QUESTIONS, INITIAL_QUICK_COUNT, INITIAL_REPORTS, INITIAL_MESSAGES,
-  INITIAL_FUNDS, INITIAL_STOCK_HISTORY
+  INITIAL_FUNDS, INITIAL_STOCK_HISTORY, INITIAL_ACTIVITIES
 } from './mockData';
 import { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
 
@@ -851,7 +851,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
@@ -900,7 +900,8 @@ export default function App() {
                 memberReports: INITIAL_REPORTS,
                 privateMessages: INITIAL_MESSAGES,
                 operationalFunds: INITIAL_FUNDS,
-                logisticsStockHistory: INITIAL_STOCK_HISTORY
+                logisticsStockHistory: INITIAL_STOCK_HISTORY,
+                activities: INITIAL_ACTIVITIES
               })
             });
             if (!seedRes.ok) throw new Error('Seeding failed');
@@ -920,7 +921,8 @@ export default function App() {
               dbProposals,
               dbLogs,
               dbFunds,
-              dbStockHistory
+              dbStockHistory,
+              dbActivities
             ] = await Promise.all([
               fetch('/api/members').then(r => r.json()),
               fetch('/api/logistics').then(r => r.json()),
@@ -932,7 +934,8 @@ export default function App() {
               fetch('/api/ranting-proposals').then(r => r.json()),
               fetch('/api/audit-logs').then(r => r.json()),
               fetch('/api/funds').then(r => r.json()).catch(() => []),
-              fetch('/api/logistics/history').then(r => r.json()).catch(() => [])
+              fetch('/api/logistics/history').then(r => r.json()).catch(() => []),
+              fetch('/api/activities').then(r => r.json()).catch(() => [])
             ]);
 
             if (dbMembers) setMembers(dbMembers);
@@ -946,6 +949,7 @@ export default function App() {
             if (dbLogs) setAuditLogs(dbLogs);
             if (dbFunds) setFunds(dbFunds);
             if (dbStockHistory) setStockHistory(dbStockHistory);
+            if (dbActivities) setActivities(dbActivities);
           }
         }
       } catch (error) {
@@ -1098,6 +1102,35 @@ export default function App() {
 
   const [showStockMutationModal, setShowStockMutationModal] = useState(false);
   const [showFundModal, setShowFundModal] = useState(false);
+
+  // Activities States
+  const [activities, setActivities] = useState<PartyActivity[]>(() => {
+    const saved = localStorage.getItem('pdip_activities');
+    return saved ? JSON.parse(saved) : INITIAL_ACTIVITIES;
+  });
+
+  // Activities Form & Modal States
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [showActivityReportModal, setShowActivityReportModal] = useState(false);
+  const [selectedActivityIdForReport, setSelectedActivityIdForReport] = useState('');
+  
+  const [newActivityTitle, setNewActivityTitle] = useState('');
+  const [newActivityType, setNewActivityType] = useState('Konsolidasi PAC');
+  const [newActivityExecutors, setNewActivityExecutors] = useState<Member[]>([]);
+  const [newActivityDate, setNewActivityDate] = useState('');
+  const [newActivityLocation, setNewActivityLocation] = useState('');
+  const [newActivityBudgetTransport, setNewActivityBudgetTransport] = useState<number>(0);
+  const [newActivityBudgetMeals, setNewActivityBudgetMeals] = useState<number>(0);
+  const [newActivityBudgetAccommodation, setNewActivityBudgetAccommodation] = useState<number>(0);
+  const [newActivityBudgetOther, setNewActivityBudgetOther] = useState<number>(0);
+  
+  const [newActivityReportDescription, setNewActivityReportDescription] = useState('');
+  const [newActivityReportPhoto, setNewActivityReportPhoto] = useState('');
+  const [executorSearchText, setExecutorSearchText] = useState('');
+
+  // Filters for activities
+  const [filterActivityStatus, setFilterActivityStatus] = useState<string>('ALL');
+  const [filterActivityExecutor, setFilterActivityExecutor] = useState<string>('ALL');
   
   // Find current active user profile
   const currentUser = members.find(m => m.id === currentUserId) || members[0];
@@ -1150,6 +1183,24 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pdip_stock_history', JSON.stringify(stockHistory));
   }, [stockHistory]);
+  useEffect(() => {
+    localStorage.setItem('pdip_activities', JSON.stringify(activities));
+  }, [activities]);
+
+  useEffect(() => {
+    const hasLegislator = newActivityExecutors.some(e => e.role === 'anggota_dewan');
+    if (hasLegislator) {
+      const legislativeTypes = ['Reses', 'Kunjungan Dapil', 'Sosialisasi Perda', 'Lainnya (Legislatif)'];
+      if (!legislativeTypes.includes(newActivityType)) {
+        setNewActivityType('Reses');
+      }
+    } else {
+      const standardTypes = ['Konsolidasi PAC', 'Rapat Pleno DPC', 'Kerja Bakti Sosial', 'Musyawarah Ranting', 'Pendidikan Politik Kader', 'Lainnya'];
+      if (!standardTypes.includes(newActivityType)) {
+        setNewActivityType('Konsolidasi PAC');
+      }
+    }
+  }, [newActivityExecutors]);
 
 
 
@@ -1527,6 +1578,163 @@ export default function App() {
     setStockQuantity(0);
     setStockNotes('');
     pushAuditLog(`Mencatat mutasi stok ${targetItem.name}: ${stockMutationType === 'stock_in' ? 'Masuk' : 'Keluar'} (${stockQuantity} Pcs)`);
+  };
+
+  const toggleExecutor = (member: Member) => {
+    if (newActivityExecutors.some(m => m.id === member.id)) {
+      setNewActivityExecutors(prev => prev.filter(m => m.id !== member.id));
+    } else {
+      setNewActivityExecutors(prev => [...prev, member]);
+    }
+  };
+
+  // Activities Handlers
+  const handleAddActivity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newActivityTitle.trim() || newActivityExecutors.length === 0 || !newActivityDate || !newActivityLocation.trim()) {
+      alert("Harap lengkapi semua data kegiatan yang diperlukan.");
+      return;
+    }
+
+    const totalRAB = newActivityBudgetTransport + newActivityBudgetMeals + newActivityBudgetAccommodation + newActivityBudgetOther;
+
+    const newAct: PartyActivity = {
+      id: `act-${Date.now()}`,
+      title: newActivityTitle,
+      type: newActivityType,
+      executors: newActivityExecutors.map(exec => ({
+        id: exec.id,
+        name: exec.name,
+        role: exec.role
+      })),
+      date: newActivityDate,
+      location: newActivityLocation,
+      status: 'rencana',
+      budgetTransport: newActivityBudgetTransport,
+      budgetMeals: newActivityBudgetMeals,
+      budgetAccommodation: newActivityBudgetAccommodation,
+      budgetOther: newActivityBudgetOther,
+      budgetTotal: totalRAB
+    };
+
+    if (isDbConnected) {
+      fetch('/api/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAct)
+      }).catch(err => console.error('Error saving activity to database:', err));
+    }
+
+    setActivities(prev => [newAct, ...prev]);
+    setShowActivityModal(false);
+
+    // Reset Form
+    setNewActivityTitle('');
+    setNewActivityType('Konsolidasi PAC');
+    setNewActivityExecutors([]);
+    setNewActivityDate('');
+    setNewActivityLocation('');
+    setNewActivityBudgetTransport(0);
+    setNewActivityBudgetMeals(0);
+    setNewActivityBudgetAccommodation(0);
+    setNewActivityBudgetOther(0);
+    
+    pushAuditLog(`Mendaftarkan rencana kegiatan baru: ${newAct.title}`);
+  };
+
+  const handleUpdateActivityStatus = (activityId: string, nextStatus: PartyActivity['status']) => {
+    const target = activities.find(a => a.id === activityId);
+    if (!target) return;
+
+    if (isDbConnected) {
+      fetch(`/api/activities/${activityId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: nextStatus,
+          submitterId: currentUser.id,
+          submitterName: currentUser.name
+        })
+      }).catch(err => console.error('Error updating activity status in database:', err));
+    }
+
+    // Sync financial records locally if approved
+    if (nextStatus === 'disetujui' && target.status !== 'disetujui' && target.status !== 'pelaksanaan' && target.status !== 'selesai') {
+      const fundId = `f-act-${Date.now()}`;
+      const executorsList = target.executors.map(e => `${e.name} (${e.role.toUpperCase()})`).join(', ');
+      const fundTitle = `RAB Kegiatan: ${target.title}`;
+      const fundDesc = `Pembiayaan kegiatan [${target.type}] di [${target.location}]. Pelaksana: ${executorsList}`;
+      const currentDate = new Date().toISOString().slice(0, 10);
+
+      const newFund: OperationalFund = {
+        id: fundId,
+        type: 'expense',
+        amount: target.budgetTotal,
+        category: 'Kegiatan',
+        title: fundTitle,
+        description: fundDesc,
+        date: currentDate,
+        submitterId: currentUser.id,
+        submitterName: currentUser.name
+      };
+
+      setFunds(prev => [newFund, ...prev]);
+    }
+
+    setActivities(prev => 
+      prev.map(a => a.id === activityId ? { ...a, status: nextStatus } : a)
+    );
+
+    pushAuditLog(`Mengubah status kegiatan "${target.title}" menjadi ${nextStatus.toUpperCase()}`);
+  };
+
+  const handleSubmitActivityReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newActivityReportDescription.trim()) return;
+
+    if (isDbConnected) {
+      fetch(`/api/activities/${selectedActivityIdForReport}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'selesai',
+          reportDescription: newActivityReportDescription,
+          reportPhoto: newActivityReportPhoto || null
+        })
+      }).catch(err => console.error('Error submitting activity report to database:', err));
+    }
+
+    setActivities(prev => 
+      prev.map(a => a.id === selectedActivityIdForReport 
+        ? { ...a, status: 'selesai', reportDescription: newActivityReportDescription, reportPhoto: newActivityReportPhoto || undefined } 
+        : a
+      )
+    );
+
+    const target = activities.find(a => a.id === selectedActivityIdForReport);
+    setShowActivityReportModal(false);
+    setSelectedActivityIdForReport('');
+    setNewActivityReportDescription('');
+    setNewActivityReportPhoto('');
+    
+    if (target) {
+      pushAuditLog(`Mengirimkan laporan pelaksanaan kegiatan: ${target.title}`);
+    }
+  };
+
+  const handleDeleteActivity = (activityId: string) => {
+    const target = activities.find(a => a.id === activityId);
+    if (!target) return;
+
+    if (confirm(`Apakah Anda yakin ingin menghapus kegiatan "${target.title}"?`)) {
+      if (isDbConnected) {
+        fetch(`/api/activities/${activityId}`, { method: 'DELETE' })
+          .catch(err => console.error('Error deleting activity from database:', err));
+      }
+
+      setActivities(prev => prev.filter(a => a.id !== activityId));
+      pushAuditLog(`Menghapus kegiatan: ${target.title}`);
+    }
   };
 
   // Photo / File Upload to Base64
@@ -2289,6 +2497,7 @@ export default function App() {
               { id: 'kaderisasi', label: 'Kaderisasi E-Learning', icon: BookOpen },
               { id: 'logistik', label: 'Logistik & Distribusi', icon: Truck },
               { id: 'aspirasi', label: 'Aspirasi & DPRD', icon: MessageSquare },
+              { id: 'kegiatan', label: 'Manajemen Kegiatan', icon: Calendar },
               { id: 'quickcount', label: 'TPS & Quick Count C1', icon: RefreshCw },
               ...((currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') ? [
                 { id: 'pendanaan', label: 'Dana Operasional', icon: Wallet }
@@ -3762,6 +3971,364 @@ export default function App() {
           </div>
         )}
 
+        {/* ==================== KEGIATAN VIEW ==================== */}
+        {activeTab === 'kegiatan' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Header Banner */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-red-950/20 pb-6">
+              <div>
+                <h2 className="text-2xl font-bold font-serif text-white flex items-center gap-2">
+                  <Calendar className="text-pdip-red" /> Manajemen Kegiatan & RAB
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">Perencanaan, Pengajuan RAB, Persetujuan Pimpinan, Pelaksanaan, dan Laporan Kegiatan</p>
+              </div>
+              <button
+                onClick={() => {
+                  setNewActivityExecutors([]);
+                  setNewActivityTitle('');
+                  setNewActivityLocation('');
+                  setNewActivityDate('');
+                  setNewActivityBudgetTransport(0);
+                  setNewActivityBudgetMeals(0);
+                  setNewActivityBudgetAccommodation(0);
+                  setNewActivityBudgetOther(0);
+                  setExecutorSearchText('');
+                  setShowActivityModal(true);
+                }}
+                className="bg-pdip-red hover:bg-pdip-brightred text-white px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-semibold transition"
+              >
+                <Plus size={16} /> Buat Rencana Kegiatan
+              </button>
+            </div>
+
+            {/* Summary Statistics */}
+            {(() => {
+              const totalActivities = activities.length;
+              const pendingActivities = activities.filter(a => a.status === 'rencana' || a.status === 'pengajuan').length;
+              const ongoingActivities = activities.filter(a => a.status === 'disetujui' || a.status === 'pelaksanaan').length;
+              const completedActivities = activities.filter(a => a.status === 'selesai').length;
+              const totalApprovedBudget = activities
+                .filter(a => a.status === 'disetujui' || a.status === 'pelaksanaan' || a.status === 'selesai')
+                .reduce((sum, a) => sum + a.budgetTotal, 0);
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="bg-pdip-metal p-4 rounded-xl border border-red-900/20 shadow-md">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Kegiatan</span>
+                    <p className="text-2xl font-black text-white mt-1">{totalActivities}</p>
+                  </div>
+                  <div className="bg-pdip-metal p-4 rounded-xl border border-red-900/20 shadow-md">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block text-yellow-500">Menunggu Persetujuan</span>
+                    <p className="text-2xl font-black text-pdip-gold mt-1">{pendingActivities}</p>
+                  </div>
+                  <div className="bg-pdip-metal p-4 rounded-xl border border-red-900/20 shadow-md">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block text-blue-400">Sedang Berjalan</span>
+                    <p className="text-2xl font-black text-blue-400 mt-1">{ongoingActivities}</p>
+                  </div>
+                  <div className="bg-pdip-metal p-4 rounded-xl border border-red-900/20 shadow-md">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block text-emerald-500">Selesai Laporan</span>
+                    <p className="text-2xl font-black text-emerald-500 mt-1">{completedActivities}</p>
+                  </div>
+                  <div className="bg-pdip-metal p-4 rounded-xl border border-red-900/20 shadow-md col-span-1 sm:col-span-2 lg:col-span-1">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block text-pdip-gold">Anggaran Disetujui</span>
+                    <p className="text-base font-black text-white mt-1 truncate">Rp {totalApprovedBudget.toLocaleString()}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Filters bar */}
+            <div className="bg-pdip-metal p-4 rounded-xl border border-red-950/20 flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <span className="text-xs text-gray-400 font-semibold mr-2">Status:</span>
+                {[
+                  { value: 'ALL', label: 'Semua' },
+                  { value: 'rencana', label: 'Rencana' },
+                  { value: 'pengajuan', label: 'Pengajuan' },
+                  { value: 'disetujui', label: 'Disetujui' },
+                  { value: 'pelaksanaan', label: 'Pelaksanaan' },
+                  { value: 'selesai', label: 'Selesai' }
+                ].map(opt => {
+                  const isActive = filterActivityStatus === opt.value;
+                  const count = opt.value === 'ALL' ? activities.length : activities.filter(a => a.status === opt.value).length;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setFilterActivityStatus(opt.value)}
+                      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                        isActive
+                          ? 'bg-pdip-red text-white font-bold'
+                          : 'bg-pdip-black text-gray-400 hover:text-white border border-red-950/20'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isActive ? 'bg-red-950 text-red-300' : 'bg-pdip-darkgray text-gray-400'}`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                <span className="text-xs text-gray-400 font-semibold shrink-0">Pelaksana:</span>
+                <select
+                  value={filterActivityExecutor}
+                  onChange={(e) => setFilterActivityExecutor(e.target.value)}
+                  className="bg-pdip-black text-xs text-gray-300 border border-red-900/30 rounded-lg p-2 w-full md:w-48 focus:outline-none focus:border-pdip-red"
+                >
+                  <option value="ALL">Semua Pelaksana</option>
+                  {members
+                    .filter(m => activities.some(a => a.executors.some(e => e.id === m.id)))
+                    .map(m => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.role.replace('_', ' ').toUpperCase()})</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Activities List */}
+            {(() => {
+              const filteredActivities = activities.filter(act => {
+                const matchesStatus = filterActivityStatus === 'ALL' || act.status === filterActivityStatus;
+                const matchesExecutor = filterActivityExecutor === 'ALL' || act.executors.some(e => e.id === filterActivityExecutor);
+                return matchesStatus && matchesExecutor;
+              });
+
+              if (filteredActivities.length === 0) {
+                return (
+                  <div className="bg-pdip-metal p-12 rounded-xl border border-red-900/10 text-center space-y-4">
+                    <Calendar size={48} className="text-gray-650 mx-auto" />
+                    <div>
+                      <h3 className="font-bold text-white text-base">Tidak Ada Kegiatan</h3>
+                      <p className="text-xs text-gray-400 mt-1">Belum ada kegiatan yang terdaftar untuk filter status dan pelaksana ini.</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  {filteredActivities.map((act) => {
+                    const statusColors = {
+                      rencana: { bg: 'bg-gray-950/45', text: 'text-gray-450', border: 'border-gray-800/40' },
+                      pengajuan: { bg: 'bg-yellow-950/40', text: 'text-pdip-gold', border: 'border-yellow-900/40' },
+                      disetujui: { bg: 'bg-blue-950/40', text: 'text-blue-400', border: 'border-blue-900/40' },
+                      pelaksanaan: { bg: 'bg-orange-950/40', text: 'text-orange-400', border: 'border-orange-900/40' },
+                      selesai: { bg: 'bg-emerald-950/40', text: 'text-emerald-400', border: 'border-emerald-900/40' }
+                    };
+
+                    const currentStatusColor = statusColors[act.status] || statusColors.rencana;
+
+                    // Compute current index for timeline
+                    const steps = ['rencana', 'pengajuan', 'disetujui', 'pelaksanaan', 'selesai'];
+                    const currentIndex = steps.indexOf(act.status);
+
+                    return (
+                      <div key={act.id} className="bg-pdip-metal rounded-xl border border-red-900/15 shadow-lg overflow-hidden flex flex-col justify-between relative group">
+                        
+                        {/* Header & Delete action */}
+                        <div className="p-6 pb-4 border-b border-red-950/10 flex justify-between items-start gap-4 bg-pdip-black/10">
+                          <div className="space-y-1">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase ${
+                              act.type.includes('Reses') || act.type.includes('Dapil') || act.type.includes('Perda')
+                                ? 'bg-amber-950/60 text-amber-400 border border-amber-900/30'
+                                : 'bg-red-950/60 text-pdip-red border border-red-900/30'
+                            }`}>
+                              {act.type}
+                            </span>
+                            <h3 className="text-base font-bold text-white font-serif tracking-tight leading-snug">{act.title}</h3>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase border ${currentStatusColor.bg} ${currentStatusColor.text} ${currentStatusColor.border}`}>
+                              {act.status}
+                            </span>
+                            
+                            {(currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') && (
+                              <button
+                                onClick={() => handleDeleteActivity(act.id)}
+                                className="p-1.5 text-gray-500 hover:text-red-400 bg-pdip-black/20 hover:bg-red-950/30 rounded transition"
+                                title="Hapus Kegiatan"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Body Details */}
+                        <div className="p-6 space-y-5 flex-1">
+                          {/* Location & Date */}
+                          <div className="grid grid-cols-2 gap-4 text-xs text-gray-400">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-pdip-red" />
+                              <span>{act.date}</span>
+                            </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <MapPin size={14} className="text-pdip-red shrink-0" />
+                              <span className="truncate">{act.location}</span>
+                            </div>
+                          </div>
+
+                          {/* Executors (Multiple) */}
+                          <div className="space-y-2 bg-pdip-black/25 p-3 rounded-lg border border-red-950/10">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Pelaksana Kegiatan ({act.executors.length}):</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {act.executors.map(exec => (
+                                <span key={exec.id} className="inline-flex items-center text-[10px] bg-red-950/40 border border-red-900/10 text-gray-300 font-medium px-2 py-0.5 rounded">
+                                  {exec.name} <span className="text-pdip-gold ml-1">({exec.role.replace('_', ' ').toUpperCase()})</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Simple RAB */}
+                          <div className="bg-pdip-black/30 p-4 rounded-xl border border-red-950/15 space-y-3">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Rincian Anggaran Biaya (RAB):</span>
+                            
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                              <div className="flex justify-between border-b border-red-950/5 pb-1">
+                                <span className="text-gray-400">Transportasi:</span>
+                                <span className="font-bold text-white font-mono">Rp {act.budgetTransport.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-red-950/5 pb-1">
+                                <span className="text-gray-400">Konsumsi:</span>
+                                <span className="font-bold text-white font-mono">Rp {act.budgetMeals.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-red-950/5 pb-1">
+                                <span className="text-gray-400">Akomodasi:</span>
+                                <span className="font-bold text-white font-mono">Rp {act.budgetAccommodation.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-red-950/5 pb-1">
+                                <span className="text-gray-400">Lain-lain:</span>
+                                <span className="font-bold text-white font-mono">Rp {act.budgetOther.toLocaleString()}</span>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex justify-between items-center text-xs border-t border-red-950/10">
+                              <strong className="text-gray-300 font-serif">Total Pengajuan RAB:</strong>
+                              <strong className="text-xs text-pdip-gold font-mono font-black bg-yellow-950/20 px-2.5 py-0.5 rounded border border-yellow-900/10">
+                                Rp {act.budgetTotal.toLocaleString()}
+                              </strong>
+                            </div>
+                          </div>
+
+                          {/* Timeline Workflow */}
+                          <div className="space-y-3 pt-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Progres Timeline:</span>
+                            
+                            <div className="relative flex justify-between items-center px-2">
+                              {/* Horizontal Line background */}
+                              <div className="absolute left-6 right-6 top-3 h-[2px] bg-pdip-black -z-10">
+                                <div 
+                                  className="h-full bg-gradient-to-r from-pdip-red to-pdip-gold transition-all duration-300"
+                                  style={{ width: `${(currentIndex / 4) * 100}%` }}
+                                ></div>
+                              </div>
+
+                              {steps.map((st, idx) => {
+                                const isPassed = idx <= currentIndex;
+                                const isCurrent = idx === currentIndex;
+                                return (
+                                  <div key={st} className="flex flex-col items-center z-10">
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] transition-all duration-300 ${
+                                      isCurrent
+                                        ? 'bg-pdip-gold border-2 border-white text-pdip-black shadow-lg scale-110'
+                                        : isPassed
+                                          ? 'bg-pdip-red text-white'
+                                          : 'bg-pdip-darkgray text-gray-500 border border-red-950/10'
+                                    }`}>
+                                      {idx + 1}
+                                    </div>
+                                    <span className={`text-[8px] mt-1.5 uppercase font-bold tracking-wider ${
+                                      isCurrent ? 'text-pdip-gold font-black' : isPassed ? 'text-gray-300' : 'text-gray-600'
+                                    }`}>
+                                      {st}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Report View (If completed) */}
+                          {act.status === 'selesai' && (
+                            <div className="bg-emerald-950/10 p-4 rounded-xl border border-emerald-900/20 space-y-3 mt-4 text-xs">
+                              <span className="font-bold text-emerald-400 block font-serif">Laporan Pertanggungjawaban Kegiatan:</span>
+                              <p className="text-gray-300 italic">"{act.reportDescription}"</p>
+                              {act.reportPhoto && (
+                                <div className="border border-emerald-900/30 rounded-lg overflow-hidden max-h-[220px] bg-black">
+                                  <img 
+                                    src={act.reportPhoto} 
+                                    alt="Dokumentasi Kegiatan" 
+                                    className="w-full h-full object-cover max-h-[220px] hover:scale-105 transition duration-300" 
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions Footer */}
+                        {act.status !== 'selesai' && (
+                          <div className="p-6 pt-0 border-t border-red-950/10 bg-pdip-black/10 flex flex-wrap gap-2 justify-end">
+                            {/* Option 1: Submit for approval (rencana -> pengajuan) */}
+                            {act.status === 'rencana' && (
+                              <button
+                                onClick={() => handleUpdateActivityStatus(act.id, 'pengajuan')}
+                                className="bg-pdip-darkgray hover:bg-gray-800 border border-red-900/25 text-gray-300 hover:text-white font-bold text-xs px-3.5 py-2 rounded-lg transition"
+                              >
+                                Ajukan Persetujuan DPC
+                              </button>
+                            )}
+
+                            {/* Option 2: Approve RAB (rencana/pengajuan -> disetujui). Only Pimpinan DPC & Super Admin */}
+                            {(act.status === 'rencana' || act.status === 'pengajuan') && (currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc') && (
+                              <button
+                                onClick={() => handleUpdateActivityStatus(act.id, 'disetujui')}
+                                className="bg-pdip-red hover:bg-pdip-brightred text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md transition flex items-center gap-1.5"
+                              >
+                                <Shield size={12} /> Setujui Kegiatan & RAB
+                              </button>
+                            )}
+
+                            {/* Option 3: Start Execution (disetujui -> pelaksanaan) */}
+                            {act.status === 'disetujui' && (
+                              <button
+                                onClick={() => handleUpdateActivityStatus(act.id, 'pelaksanaan')}
+                                className="bg-pdip-red hover:bg-pdip-brightred text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md transition"
+                              >
+                                Mulai Pelaksanaan
+                              </button>
+                            )}
+
+                            {/* Option 4: Report (pelaksanaan -> selesai) */}
+                            {act.status === 'pelaksanaan' && (
+                              <button
+                                onClick={() => {
+                                  setSelectedActivityIdForReport(act.id);
+                                  setNewActivityReportDescription('');
+                                  setNewActivityReportPhoto('');
+                                  setShowActivityReportModal(true);
+                                }}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md transition"
+                              >
+                                Laporkan Hasil Kegiatan
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ==================== TPS & QUICK COUNT C1 VIEW ==================== */}
         {activeTab === 'quickcount' && (
           <div className="space-y-8 animate-fadeIn">
@@ -5215,6 +5782,280 @@ export default function App() {
               <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
                 <button type="button" onClick={() => setRespondingAspirationId(null)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
                 <button type="submit" className="bg-pdip-red text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Kirim Tanggapan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Kegiatan Modals */}
+      {showActivityModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-pdip-metal border border-red-900/30 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl animate-scaleUp">
+            {/* Header */}
+            <div className="p-6 border-b border-red-950/20 flex justify-between items-center bg-pdip-black/20">
+              <h3 className="font-bold text-lg text-white font-serif flex items-center gap-2">
+                <Calendar className="text-pdip-red" /> Buat Rencana Kegiatan & RAB
+              </h3>
+              <button onClick={() => setShowActivityModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAddActivity} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Nama / Judul Kegiatan:</label>
+                <input
+                  required
+                  type="text"
+                  value={newActivityTitle}
+                  onChange={(e) => setNewActivityTitle(e.target.value)}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white"
+                  placeholder="Contoh: Konsolidasi Akbar Ranting Desa Semarang"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 font-semibold block">Tanggal Pelaksanaan:</label>
+                  <input
+                    required
+                    type="date"
+                    value={newActivityDate}
+                    onChange={(e) => setNewActivityDate(e.target.value)}
+                    className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400 font-semibold block">Lokasi:</label>
+                  <input
+                    required
+                    type="text"
+                    value={newActivityLocation}
+                    onChange={(e) => setNewActivityLocation(e.target.value)}
+                    className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white"
+                    placeholder="Contoh: Aula Kecamatan"
+                  />
+                </div>
+              </div>
+
+              {/* Executors picklist with search */}
+              <div className="space-y-2">
+                <label className="text-xs text-gray-400 font-semibold block">
+                  Pilih Pelaksana Kegiatan <span className="text-red-500 font-bold">*Bisa pilih lebih dari satu orang</span>:
+                </label>
+                <input
+                  type="text"
+                  value={executorSearchText}
+                  onChange={(e) => setExecutorSearchText(e.target.value)}
+                  className="w-full bg-pdip-black text-xs border border-red-900/20 rounded-lg p-2 text-white"
+                  placeholder="Cari anggota berdasarkan nama atau jabatan..."
+                />
+                
+                <div className="max-h-[150px] overflow-y-auto border border-red-900/20 bg-pdip-black p-3 rounded-lg space-y-2.5">
+                  {(() => {
+                    const activeMembers = members.filter(m => m.status === 'ACTIVE');
+                    const searched = activeMembers.filter(m => 
+                      m.name.toLowerCase().includes(executorSearchText.toLowerCase()) || 
+                      m.role.replace('_', ' ').toLowerCase().includes(executorSearchText.toLowerCase())
+                    );
+
+                    if (searched.length === 0) {
+                      return <p className="text-xs text-gray-500 italic text-center py-2">Tidak ada anggota yang cocok</p>;
+                    }
+
+                    return searched.map(member => {
+                      const isChecked = newActivityExecutors.some(m => m.id === member.id);
+                      return (
+                        <label key={member.id} className="flex items-center gap-3 cursor-pointer select-none group text-xs text-gray-300 hover:text-white">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleExecutor(member)}
+                            className="w-3.5 h-3.5 rounded text-pdip-red bg-pdip-black border-red-900/30 focus:ring-pdip-red"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="font-bold text-white group-hover:text-red-400 transition-colors block truncate">{member.name}</span>
+                            <span className="text-[10px] text-gray-500 uppercase">{member.role.replace('_', ' ')}</span>
+                          </div>
+                        </label>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Selected executors quick badges */}
+                {newActivityExecutors.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1.5">
+                    {newActivityExecutors.map(exec => (
+                      <span key={exec.id} className="inline-flex items-center text-[10px] bg-red-950/40 text-gray-200 border border-red-900/25 px-2 py-0.5 rounded gap-1">
+                        <span>{exec.name}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => toggleExecutor(exec)}
+                          className="text-red-500 hover:text-red-400 font-bold ml-1"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Activity Type */}
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Jenis Kegiatan:</label>
+                <select
+                  value={newActivityType}
+                  onChange={(e) => setNewActivityType(e.target.value)}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                >
+                  {(() => {
+                    const hasLegislator = newActivityExecutors.some(exec => exec.role === 'anggota_dewan');
+                    if (hasLegislator) {
+                      return (
+                        <>
+                          <option value="Reses">Reses Dewan</option>
+                          <option value="Kunjungan Dapil">Kunjungan Dapil</option>
+                          <option value="Sosialisasi Perda">Sosialisasi Perda</option>
+                          <option value="Lainnya (Legislatif)">Lainnya (Legislatif)</option>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <>
+                          <option value="Konsolidasi PAC">Konsolidasi PAC</option>
+                          <option value="Rapat Pleno DPC">Rapat Pleno DPC</option>
+                          <option value="Kerja Bakti Sosial">Kerja Bakti Sosial</option>
+                          <option value="Musyawarah Ranting">Musyawarah Ranting</option>
+                          <option value="Pendidikan Politik Kader">Pendidikan Politik Kader</option>
+                          <option value="Lainnya">Lainnya</option>
+                        </>
+                      );
+                    }
+                  })()}
+                </select>
+              </div>
+
+              {/* RAB Inputs */}
+              <div className="space-y-3 p-4 bg-pdip-black/25 rounded-xl border border-red-950/15">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Penyusunan Rencana Anggaran Biaya (RAB):</span>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-gray-400">Biaya Transportasi (Rp):</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={newActivityBudgetTransport}
+                      onChange={(e) => setNewActivityBudgetTransport(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-pdip-black text-xs border border-red-900/20 rounded-lg p-2 text-white font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-gray-400">Biaya Konsumsi/Makan (Rp):</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={newActivityBudgetMeals}
+                      onChange={(e) => setNewActivityBudgetMeals(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-pdip-black text-xs border border-red-900/20 rounded-lg p-2 text-white font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-gray-400">Biaya Akomodasi (Rp):</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={newActivityBudgetAccommodation}
+                      onChange={(e) => setNewActivityBudgetAccommodation(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-pdip-black text-xs border border-red-900/20 rounded-lg p-2 text-white font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-gray-400">Biaya Lain-lain (Rp):</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={newActivityBudgetOther}
+                      onChange={(e) => setNewActivityBudgetOther(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-pdip-black text-xs border border-red-900/20 rounded-lg p-2 text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-red-950/15 flex justify-between items-center text-xs">
+                  <strong className="text-gray-300 font-serif">Total RAB Kegiatan:</strong>
+                  <strong className="text-sm text-pdip-gold font-mono font-black">
+                    Rp {(newActivityBudgetTransport + newActivityBudgetMeals + newActivityBudgetAccommodation + newActivityBudgetOther).toLocaleString()}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Submit & Cancel */}
+              <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
+                <button type="button" onClick={() => setShowActivityModal(false)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
+                <button type="submit" className="bg-pdip-red text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Simpan Kegiatan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showActivityReportModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-pdip-metal border border-red-900/30 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-scaleUp">
+            {/* Header */}
+            <div className="p-6 border-b border-red-950/20 flex justify-between items-center bg-pdip-black/20">
+              <h3 className="font-bold text-lg text-white font-serif flex items-center gap-2">
+                <Calendar className="text-emerald-400" /> Kirim Laporan Pelaksanaan
+              </h3>
+              <button onClick={() => setShowActivityReportModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmitActivityReport} className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Deskripsi Pelaksanaan Kegiatan:</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={newActivityReportDescription}
+                  onChange={(e) => setNewActivityReportDescription(e.target.value)}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white resize-none"
+                  placeholder="Tuliskan deskripsi lengkap hasil pelaksanaan kegiatan..."
+                ></textarea>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-gray-400 font-semibold block">Foto Dokumentasi Kegiatan:</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handlePhotoUpload(e, setNewActivityReportPhoto)}
+                    className="hidden"
+                    id="activity-report-photo-input"
+                  />
+                  <label
+                    htmlFor="activity-report-photo-input"
+                    className="bg-pdip-darkgray hover:bg-gray-800 border border-red-900/30 text-gray-300 text-xs font-semibold px-4 py-2.5 rounded-lg cursor-pointer transition flex items-center gap-2"
+                  >
+                    <Upload size={14} /> Pilih Foto
+                  </label>
+                  {newActivityReportPhoto && <span className="text-[10px] text-emerald-400 font-semibold">Foto Terpilih ✓</span>}
+                </div>
+                {newActivityReportPhoto && (
+                  <div className="border border-red-900/30 rounded-lg overflow-hidden max-h-[150px] bg-black mt-2">
+                    <img src={newActivityReportPhoto} alt="Preview Laporan" className="w-full h-full object-cover max-h-[150px]" />
+                  </div>
+                )}
+              </div>
+
+              {/* Submit & Cancel */}
+              <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end bg-pdip-black/5 p-4 rounded-xl">
+                <button type="button" onClick={() => setShowActivityReportModal(false)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
+                <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Kirim Laporan</button>
               </div>
             </form>
           </div>

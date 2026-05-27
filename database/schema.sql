@@ -154,3 +154,22 @@ CREATE TABLE IF NOT EXISTS logistics_stock_history (
     FOREIGN KEY (item_id) REFERENCES logistics_items(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 12. Tabel Activities (Kegiatan & RAB)
+CREATE TABLE IF NOT EXISTS activities (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    executors TEXT NOT NULL, -- Menyimpan JSON array pelaksana [{id, name, role}]
+    date VARCHAR(30) NOT NULL,
+    location VARCHAR(200) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'rencana',
+    budget_transport DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    budget_meals DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    budget_accommodation DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    budget_other DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    budget_total DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    report_description TEXT,
+    report_photo LONGTEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+

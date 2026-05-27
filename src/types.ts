@@ -130,3 +130,20 @@ export interface LogisticsStockHistory {
   date: string;
   submitterName: string;
 }
+
+export interface PartyActivity {
+  id: string;
+  title: string;
+  type: string;
+  executors: Array<{ id: string; name: string; role: string }>;
+  date: string;
+  location: string;
+  status: 'rencana' | 'pengajuan' | 'disetujui' | 'pelaksanaan' | 'selesai';
+  budgetTransport: number;
+  budgetMeals: number;
+  budgetAccommodation: number;
+  budgetOther: number;
+  budgetTotal: number;
+  reportDescription?: string;
+  reportPhoto?: string;
+}

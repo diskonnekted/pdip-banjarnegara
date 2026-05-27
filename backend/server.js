@@ -68,7 +68,8 @@ app.post('/api/seed', async (req, res) => {
       memberReports, 
       privateMessages,
       operationalFunds,
-      logisticsStockHistory
+      logisticsStockHistory,
+      activities
     } = req.body;
 
     console.log('Seeding database with frontend data...');
@@ -86,6 +87,7 @@ app.post('/api/seed', async (req, res) => {
     await connection.query('DELETE FROM members');
     await connection.query('DELETE FROM quick_count_results');
     await connection.query('DELETE FROM operational_funds');
+    await connection.query('DELETE FROM activities');
 
     // 1. Seed Members (Group 1: without parentId first to satisfy self-referential FK)
     if (members && members.length > 0) {
@@ -186,6 +188,23 @@ app.post('/api/seed', async (req, res) => {
         await connection.query(
           'INSERT INTO logistics_stock_history (id, item_id, item_name, type, quantity, notes, date, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
           [sh.id, sh.itemId, sh.itemName, sh.type, sh.quantity, sh.notes, sh.date, sh.submitterName]
+        );
+      }
+    }
+
+    // 10. Seed Activities
+    if (activities && activities.length > 0) {
+      for (const act of activities) {
+        const executorsJson = JSON.stringify(act.executors);
+        await connection.query(
+          `INSERT INTO activities (id, title, type, executors, date, location, status, 
+           budget_transport, budget_meals, budget_accommodation, budget_other, budget_total, 
+           report_description, report_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            act.id, act.title, act.type, executorsJson, act.date, act.location, act.status,
+            act.budgetTransport, act.budgetMeals, act.budgetAccommodation, act.budgetOther, act.budgetTotal,
+            act.reportDescription || null, act.reportPhoto || null
+          ]
         );
       }
     }
@@ -758,6 +777,133 @@ app.post('/api/logistics/history', async (req, res) => {
     res.status(500).json({ error: error.message });
   } finally {
     connection.release();
+  }
+});
+
+});
+
+// ==================== 12. ACTIVITIES ROUTE ====================
+
+app.get('/api/activities', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM activities ORDER BY date DESC');
+    const activities = rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      executors: JSON.parse(r.executors),
+      date: r.date,
+      location: r.location,
+      status: r.status,
+      budgetTransport: parseFloat(r.budget_transport),
+      budgetMeals: parseFloat(r.budget_meals),
+      budgetAccommodation: parseFloat(r.budget_accommodation),
+      budgetOther: parseFloat(r.budget_other),
+      budgetTotal: parseFloat(r.budget_total),
+      reportDescription: r.report_description || undefined,
+      reportPhoto: r.report_photo || undefined
+    }));
+    res.json(activities);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/activities', async (req, res) => {
+  try {
+    const act = req.body;
+    const executorsJson = JSON.stringify(act.executors);
+    await pool.query(
+      `INSERT INTO activities (id, title, type, executors, date, location, status, 
+       budget_transport, budget_meals, budget_accommodation, budget_other, budget_total, 
+       report_description, report_photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        act.id, act.title, act.type, executorsJson, act.date, act.location, act.status,
+        act.budgetTransport, act.budgetMeals, act.budgetAccommodation, act.budgetOther, act.budgetTotal,
+        act.reportDescription || null, act.reportPhoto || null
+      ]
+    );
+    res.json({ success: true, activity: act });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/activities/:id', async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { id } = req.params;
+    const { status, reportDescription, reportPhoto, submitterId, submitterName } = req.body;
+
+    // Get previous state to see if status has changed to 'disetujui'
+    const [prevRows] = await connection.query('SELECT * FROM activities WHERE id = ?', [id]);
+    if (prevRows.length === 0) {
+      res.status(404).json({ error: 'Activity not found' });
+      return;
+    }
+    const prevAct = prevRows[0];
+
+    // Update query variables
+    let updateFields = [];
+    let updateValues = [];
+
+    if (status !== undefined) {
+      updateFields.push('status = ?');
+      updateValues.push(status);
+    }
+    if (reportDescription !== undefined) {
+      updateFields.push('report_description = ?');
+      updateValues.push(reportDescription);
+    }
+    if (reportPhoto !== undefined) {
+      updateFields.push('report_photo = ?');
+      updateValues.push(reportPhoto);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(id);
+      await connection.query(
+        `UPDATE activities SET ${updateFields.join(', ')} WHERE id = ?`,
+        updateValues
+      );
+    }
+
+    // Integrate with operational funds upon DPC approval
+    if (status === 'disetujui' && prevAct.status !== 'disetujui' && prevAct.status !== 'pelaksanaan' && prevAct.status !== 'selesai') {
+      const fundId = `f-act-${Date.now()}`;
+      const executorsList = JSON.parse(prevAct.executors).map(e => `${e.name} (${e.role.toUpperCase()})`).join(', ');
+      const fundTitle = `RAB Kegiatan: ${prevAct.title}`;
+      const fundDesc = `Pembiayaan kegiatan [${prevAct.type}] di [${prevAct.location}]. Pelaksana: ${executorsList}`;
+      const currentDate = new Date().toISOString().slice(0, 10);
+      
+      await connection.query(
+        'INSERT INTO operational_funds (id, type, amount, category, title, description, date, submitter_id, submitter_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          fundId, 'expense', prevAct.budget_total, 'Kegiatan', fundTitle, fundDesc, currentDate,
+          submitterId || 'm-0', submitterName || 'Admin DPC'
+        ]
+      );
+    }
+
+    await connection.commit();
+    res.json({ success: true });
+  } catch (error) {
+    await connection.rollback();
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
+  }
+});
+
+app.delete('/api/activities/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM activities WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
