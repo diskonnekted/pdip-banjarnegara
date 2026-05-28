@@ -3413,7 +3413,7 @@ export default function App() {
                     <div className="bg-pdip-black/40 border border-red-950/20 p-3 rounded-xl space-y-1">
                       <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
                         <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                        Transparansi MLM Organisasi
+                        Transparansi Jaringan Organisasi
                       </div>
                       <p className="text-[10px] text-gray-400">
                         Sistem perekrutan berjenjang (downline) yang melacak tanggung jawab upline untuk menjamin integritas data.
@@ -3546,7 +3546,7 @@ export default function App() {
               {/* Downline Tree Performance Chart */}
               <div className="bg-pdip-metal p-6 rounded-xl border border-red-950/20">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-300 mb-6 flex items-center gap-2">
-                  <BarChart3 size={16} className="text-pdip-red" /> Jaringan downline (MLM) Terbanyak di Bawah Anda
+                  <BarChart3 size={16} className="text-pdip-red" /> Jaringan downline Terbanyak di Bawah Anda
                 </h3>
                 {dashboardStats.downlineCount > 0 ? (
                   <div className="h-72">
@@ -4158,7 +4158,7 @@ export default function App() {
                        <h3 className="text-2xl font-black text-white font-serif border-b border-red-900/25 pb-2">Sistem Perekrutan Jaringan & Peta Pemetaan DPT</h3>
                        
                        <p>
-                         Pemenangan pemilu modern tidak lagi mengandalkan kampanye massa tradisional saja, melainkan beralih ke strategi **Micro-Targeting** dan **Multi-Level Member (MLM) Advocacy**. Setiap kader yang direkrut memikul tanggung jawab moral untuk merekrut anggota keluarga terdekat, tetangga, hingga mencapai target pemilih tetap (DPT) per TPS.
+                         Pemenangan pemilu modern tidak lagi mengandalkan kampanye massa tradisional saja, melainkan beralih ke strategi **Micro-Targeting** dan **Multi-Level Member Advocacy**. Setiap kader yang direkrut memikul tanggung jawab moral untuk merekrut anggota keluarga terdekat, tetangga, hingga mencapai target pemilih tetap (DPT) per TPS.
                        </p>
 
                        <h4 className="text-white font-bold text-base mt-4">1. Skema Rekrutmen Jaringan Berjenjang</h4>
@@ -4217,7 +4217,7 @@ export default function App() {
                        <span className="text-[10px] bg-red-950 text-red-400 font-bold px-2 py-0.5 rounded border border-red-900/50 uppercase">Strategi</span>
                        <h3 className="font-bold text-lg text-white">Sistem Rekrutmen Jaringan</h3>
                        <p className="text-xs text-gray-405 leading-relaxed">
-                         Cara mengembangkan jaringan downline MLM pemenangan secara efektif di tingkat rukun tetangga dan saksi TPS daerah.
+                         Cara mengembangkan jaringan downline pemenangan secara efektif di tingkat rukun tetangga dan saksi TPS daerah.
                        </p>
                      </div>
                      <div className="mt-6 pt-4 border-t border-gray-850 flex items-center justify-between">
@@ -5990,7 +5990,7 @@ export default function App() {
           <div className="bg-pdip-metal border border-red-900/30 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl animate-scaleUp">
             <div className="p-6 border-b border-red-950/20 flex justify-between items-center">
               <h3 className="font-bold text-lg text-white font-serif flex items-center gap-2">
-                <Plus className="text-pdip-red" /> Rekrut Kader / Downline MLM Baru
+                <Plus className="text-pdip-red" /> Rekrut Kader / Downline Baru
               </h3>
               <button onClick={() => setShowAddMemberModal(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
@@ -7126,7 +7126,7 @@ export default function App() {
                   <div className="p-4 bg-pdip-black/50 border border-red-900/20 rounded-xl space-y-2">
                     <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-wider">
                       <span className="p-1.5 bg-indigo-950/50 rounded-lg"><GitFork size={14} /></span>
-                      Transparansi Downline MLM
+                      Transparansi Jaringan Downline
                     </div>
                     <p className="text-xs text-gray-300 leading-relaxed">
                       Sistem perekrutan berjenjang (downline) melacak penanggung jawab rekrutmen. Setiap kader bertanggung jawab penuh atas validitas anggotanya (downline). Jika ada manipulasi data, sistem secara instan melacak upline yang memasukkan data tersebut untuk tindakan disiplin partai.
