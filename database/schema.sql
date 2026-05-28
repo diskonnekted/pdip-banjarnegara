@@ -21,6 +21,9 @@ CREATE TABLE IF NOT EXISTS members (
     parent_id VARCHAR(50),
     dapil VARCHAR(50),
     party_affiliation VARCHAR(50),
+    approach_status VARCHAR(30),
+    approach_kader_id VARCHAR(50),
+    approach_notes TEXT,
     FOREIGN KEY (parent_id) REFERENCES members(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

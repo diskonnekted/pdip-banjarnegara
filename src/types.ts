@@ -16,6 +16,9 @@ export interface Member {
   parentId?: string; // ID of the member who recruited them
   dapil?: string; // Dapil area for anggota_dewan / legislative members
   partyAffiliation?: string; // Party affiliation for general DPT simulation (e.g. PDIP, Golkar, PKB, Demokrat, etc.)
+  approachStatus?: 'tidak_prospektif' | 'prospektif' | 'respek' | 'bergabung';
+  approachKaderId?: string;
+  approachNotes?: string;
 }
 
 export interface LogisticsItem {

@@ -1318,6 +1318,13 @@ export default function App() {
     targetMemberId: ''
   });
 
+  // DPT Approach Modal States
+  const [showApproachModal, setShowApproachModal] = useState(false);
+  const [selectedDptForApproach, setSelectedDptForApproach] = useState<Member | null>(null);
+  const [approachKaderId, setApproachKaderId] = useState('');
+  const [approachStatus, setApproachStatus] = useState<'tidak_prospektif' | 'prospektif' | 'respek' | 'bergabung'>('tidak_prospektif');
+  const [approachNotes, setApproachNotes] = useState('');
+
   // Mobile-specific Form & View States
   const [newMobileMember, setNewMobileMember] = useState({
     name: '',
@@ -2012,6 +2019,64 @@ export default function App() {
     pushAuditLog(`Mengirimkan rekap hasil TPS: ${newQC.tps} Kecamatan ${newQC.kecamatan}`);
   };
 
+  // DPT Approach Helpers & Handlers
+  const getApproachStatusColor = (status?: 'tidak_prospektif' | 'prospektif' | 'respek' | 'bergabung') => {
+    switch (status) {
+      case 'tidak_prospektif': return { dot: 'bg-zinc-800 border-zinc-700', text: 'Tidak Prospektif', badge: 'bg-zinc-950 text-zinc-400 border-zinc-800' };
+      case 'prospektif': return { dot: 'bg-yellow-500 border-yellow-400', text: 'Prospektif', badge: 'bg-yellow-950 text-yellow-500 border-yellow-900/40' };
+      case 'respek': return { dot: 'bg-blue-500 border-blue-400', text: 'Respek', badge: 'bg-blue-950 text-blue-400 border-blue-900/40' };
+      case 'bergabung': return { dot: 'bg-red-600 border-red-500', text: 'Bergabung', badge: 'bg-red-950 text-red-400 border-red-900/40' };
+      default: return null;
+    }
+  };
+
+  const handleOpenApproachModal = (member: Member) => {
+    setSelectedDptForApproach(member);
+    setApproachKaderId(member.approachKaderId || '');
+    setApproachStatus(member.approachStatus || 'tidak_prospektif');
+    setApproachNotes(member.approachNotes || '');
+    setShowApproachModal(true);
+  };
+
+  const handleSaveApproach = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDptForApproach) return;
+
+    const updatedMember = {
+      ...selectedDptForApproach,
+      approachStatus,
+      approachKaderId: approachKaderId || undefined,
+      approachNotes: approachNotes || undefined,
+    };
+
+    // Update in local state
+    setMembers(prev => prev.map(m => m.id === selectedDptForApproach.id ? updatedMember : m));
+
+    // Update in DB if connected
+    if (isDbConnected) {
+      fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedMember)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          pushAuditLog(`Mengupdate status pendekatan DPT ${selectedDptForApproach.name} menjadi ${approachStatus}`);
+        }
+      })
+      .catch(err => console.error('Error saving approach to database:', err));
+    } else {
+      pushAuditLog(`Mengupdate status pendekatan DPT ${selectedDptForApproach.name} menjadi ${approachStatus} (Lokal)`);
+    }
+
+    setShowApproachModal(false);
+    setSelectedDptForApproach(null);
+    setApproachKaderId('');
+    setApproachStatus('tidak_prospektif');
+    setApproachNotes('');
+  };
+
   // Member Reports Handlers
   const handleAddReport = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2658,7 +2723,14 @@ export default function App() {
                 {currentUser.name}
               </span>
             </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 p-1 bg-pdip-darkgray rounded">
+            <button 
+              onClick={() => setIsMobileDevice(false)} 
+              title="Aktifkan Tampilan Desktop"
+              className="text-gray-400 hover:text-white p-1.5 bg-pdip-darkgray hover:bg-gray-800 rounded transition"
+            >
+              <span className="text-xs">💻</span>
+            </button>
+            <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 p-1.5 bg-pdip-darkgray hover:bg-red-950/40 rounded transition">
               <LogOut size={14} />
             </button>
           </div>
@@ -3325,8 +3397,16 @@ export default function App() {
           </nav>
         </div>
 
-        {/* Logout Button */}
-        <div className="mt-8 pt-4 border-t border-red-900/20">
+        {/* View Switcher and Logout Buttons */}
+        <div className="mt-8 pt-4 border-t border-red-900/20 space-y-2">
+          <button
+            onClick={() => setIsMobileDevice(!isMobileDevice)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold text-gray-400 hover:bg-pdip-darkgray hover:text-white transition duration-200 border border-red-900/10"
+          >
+            <span>{isMobileDevice ? "💻" : "📱"}</span>
+            <span>Tampilan {isMobileDevice ? "Desktop" : "Mobile (HP)"}</span>
+          </button>
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold text-red-400 hover:bg-red-950/20 hover:text-red-300 transition duration-200"
@@ -5408,6 +5488,7 @@ export default function App() {
                       <th className="px-6 py-4">TPS</th>
                       <th className="px-6 py-4">No. HP</th>
                       <th className="px-6 py-4">Afiliasi Politik</th>
+                      <th className="px-6 py-4 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-red-950/10 text-sm">
@@ -5433,7 +5514,7 @@ export default function App() {
                       if (totalItems === 0) {
                         return (
                           <tr>
-                            <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                            <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
                               Tidak ada data DPT ditemukan dengan filter ini.
                             </td>
                           </tr>
@@ -5445,7 +5526,22 @@ export default function App() {
                           {paginatedDPT.map((m) => (
                             <tr key={m.id} className="hover:bg-pdip-darkgray/30 transition text-xs">
                               <td className="px-6 py-4">
-                                <span className="font-bold text-white block">{m.name}</span>
+                                <div className="flex items-center gap-2.5">
+                                  <span 
+                                    className={`w-3.5 h-3.5 rounded-full inline-block border-2 ${
+                                      m.approachStatus ? getApproachStatusColor(m.approachStatus)?.dot : 'bg-zinc-900 border-zinc-800'
+                                    }`} 
+                                    title={m.approachStatus ? getApproachStatusColor(m.approachStatus)?.text : 'Belum Ditentukan'}
+                                  />
+                                  <div>
+                                    <span className="font-bold text-white block">{m.name}</span>
+                                    {m.approachStatus && (
+                                      <span className="text-[10px] text-gray-500 block mt-0.5">
+                                        Status: <span className="font-semibold text-gray-400">{getApproachStatusColor(m.approachStatus)?.text}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </td>
                               <td className="px-6 py-4 font-mono text-gray-400">
                                 {m.nik}
@@ -5470,13 +5566,21 @@ export default function App() {
                                   {m.partyAffiliation || 'Lainnya / Tidak Tahu'}
                                 </span>
                               </td>
+                              <td className="px-6 py-4 text-center">
+                                <button
+                                  onClick={() => handleOpenApproachModal(m)}
+                                  className="bg-pdip-red hover:bg-pdip-brightred text-white px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition shadow-sm border border-red-800/30"
+                                >
+                                  <Users size={12} /> Pendekatan
+                                </button>
+                              </td>
                             </tr>
                           ))}
                           
                           {/* Pagination Row */}
                           {totalPages > 1 && (
                             <tr>
-                              <td colSpan={6} className="px-6 py-4 bg-pdip-darkgray/20 border-t border-red-950/20">
+                              <td colSpan={7} className="px-6 py-4 bg-pdip-darkgray/20 border-t border-red-950/20">
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                                   <span className="text-xs text-gray-400">
                                     Menampilkan <strong className="text-white">{Math.min(totalItems, (dptCurrentPage - 1) * dptItemsPerPage + 1)}-{Math.min(totalItems, dptCurrentPage * dptItemsPerPage)}</strong> dari <strong className="text-white">{totalItems}</strong> DPT
@@ -7057,6 +7161,108 @@ export default function App() {
               <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
                 <button type="button" onClick={() => setShowReportModal(false)} className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition">Batal</button>
                 <button type="submit" className="bg-pdip-red text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">Kirim Laporan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. DPT Approach Modal */}
+      {showApproachModal && selectedDptForApproach && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-pdip-metal border border-red-900/30 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scaleUp">
+            <div className="p-6 border-b border-red-950/20 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-white font-serif flex items-center gap-2">
+                <Users className="text-pdip-red" /> Pendekatan DPT Wilayah
+              </h3>
+              <button onClick={() => { setShowApproachModal(false); setSelectedDptForApproach(null); }} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveApproach} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <div className="bg-pdip-black p-4 rounded-xl border border-red-950/20 space-y-1.5">
+                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Informasi DPT</div>
+                <div className="text-sm font-bold text-white">{selectedDptForApproach.name}</div>
+                <div className="text-xs text-gray-400 font-mono">NIK: {selectedDptForApproach.nik}</div>
+                <div className="text-xs text-red-400 font-bold">{selectedDptForApproach.kecamatan} ➔ {selectedDptForApproach.desa} | {selectedDptForApproach.tps}</div>
+              </div>
+
+              {/* Dropdown Kader Pengurus */}
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Kader Pendamping / Penanggung Jawab:</label>
+                <select
+                  required
+                  value={approachKaderId}
+                  onChange={(e) => setApproachKaderId(e.target.value)}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white focus:outline-none focus:border-pdip-red"
+                >
+                  <option value="">Pilih Kader...</option>
+                  {members
+                    .filter(m => m.role !== 'anggota' && !m.id.startsWith('dpt-'))
+                    .map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.role.replace('_', ' ').toUpperCase()})
+                      </option>
+                    ))}
+                </select>
+                <span className="text-[10px] text-gray-500 italic block mt-1">
+                  Kader bertanggung jawab penuh untuk mengawal suara pemilih ini.
+                </span>
+              </div>
+
+              {/* Pilihan Status warna */}
+              <div className="space-y-2">
+                <label className="text-xs text-gray-400 font-semibold block">Status Pendekatan saat ini:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'tidak_prospektif', color: 'bg-zinc-800 border-zinc-700', label: 'Tidak Prospektif' },
+                    { key: 'prospektif', color: 'bg-yellow-500 border-yellow-400', label: 'Prospektif' },
+                    { key: 'respek', color: 'bg-blue-500 border-blue-400', label: 'Respek' },
+                    { key: 'bergabung', color: 'bg-red-600 border-red-500', label: 'Bergabung' },
+                  ].map((s) => (
+                    <label 
+                      key={s.key}
+                      className={`flex items-center gap-2 p-2.5 bg-pdip-black/50 border rounded-lg cursor-pointer transition hover:bg-pdip-black ${
+                        approachStatus === s.key ? 'border-pdip-red bg-pdip-black text-white' : 'border-red-950/10 text-gray-400'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="approachStatus"
+                        value={s.key}
+                        checked={approachStatus === s.key}
+                        onChange={() => setApproachStatus(s.key as any)}
+                        className="hidden"
+                      />
+                      <span className={`w-3.5 h-3.5 rounded-full inline-block border ${s.color}`} />
+                      <span className="text-xs font-medium">{s.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Catatan Pendekatan */}
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 font-semibold block">Catatan Progress Pendekatan:</label>
+                <textarea
+                  rows={3}
+                  value={approachNotes}
+                  onChange={(e) => setApproachNotes(e.target.value)}
+                  className="w-full bg-pdip-black text-sm border border-red-900/30 rounded-lg p-2.5 text-white resize-none focus:outline-none focus:border-pdip-red"
+                  placeholder="Contoh: Sudah dikunjungi 2 kali, berminat dipasang baliho di pekarangan rumah..."
+                ></textarea>
+              </div>
+
+              <div className="pt-6 border-t border-red-950/20 flex gap-4 justify-end">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowApproachModal(false); setSelectedDptForApproach(null); }} 
+                  className="bg-pdip-darkgray text-xs font-semibold px-4 py-2.5 rounded-lg transition text-gray-300 hover:text-white"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="bg-pdip-red hover:bg-pdip-brightred text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-md transition">
+                  Simpan Progress
+                </button>
               </div>
             </form>
           </div>

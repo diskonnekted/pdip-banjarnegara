@@ -22,6 +22,31 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Ensure approach columns exist in members table
+(async () => {
+  try {
+    const connection = await pool.getConnection();
+    const [columns] = await connection.query('SHOW COLUMNS FROM members');
+    const columnNames = columns.map(c => c.Field);
+    
+    if (!columnNames.includes('approach_status')) {
+      await connection.query("ALTER TABLE members ADD COLUMN approach_status VARCHAR(30) NULL");
+      console.log('Added column approach_status to members');
+    }
+    if (!columnNames.includes('approach_kader_id')) {
+      await connection.query("ALTER TABLE members ADD COLUMN approach_kader_id VARCHAR(50) NULL");
+      console.log('Added column approach_kader_id to members');
+    }
+    if (!columnNames.includes('approach_notes')) {
+      await connection.query("ALTER TABLE members ADD COLUMN approach_notes TEXT NULL");
+      console.log('Added column approach_notes to members');
+    }
+    connection.release();
+  } catch (err) {
+    console.error('Migration failed or DB offline:', err.message);
+  }
+})();
+
 // Middleware to check database connectivity
 app.use(async (req, res, next) => {
   try {
@@ -94,9 +119,9 @@ app.post('/api/seed', async (req, res) => {
       // First insert all members with parent_id set to NULL
       for (const m of members) {
         await connection.query(
-          `INSERT INTO members (id, name, kta_number, nik, role, kecamatan, desa, tps, photo_url, lat, lng, phone, status, join_date, parent_id, dapil, party_affiliation) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
-          [m.id, m.name, m.ktaNumber, m.nik, m.role, m.kecamatan, m.desa, m.tps, m.photoUrl, m.lat, m.lng, m.phone, m.status || 'ACTIVE', m.joinDate, m.dapil || null, m.partyAffiliation || null]
+          `INSERT INTO members (id, name, kta_number, nik, role, kecamatan, desa, tps, photo_url, lat, lng, phone, status, join_date, parent_id, dapil, party_affiliation, approach_status, approach_kader_id, approach_notes) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+          [m.id, m.name, m.ktaNumber, m.nik, m.role, m.kecamatan, m.desa, m.tps, m.photoUrl, m.lat, m.lng, m.phone, m.status || 'ACTIVE', m.joinDate, m.dapil || null, m.partyAffiliation || null, m.approachStatus || null, m.approachKaderId || null, m.approachNotes || null]
         );
       }
       // Then update parent_ids
@@ -250,7 +275,10 @@ app.get('/api/members', async (req, res) => {
       joinDate: r.join_date,
       parentId: r.parent_id || undefined,
       dapil: r.dapil || undefined,
-      partyAffiliation: r.party_affiliation || undefined
+      partyAffiliation: r.party_affiliation || undefined,
+      approachStatus: r.approach_status || undefined,
+      approachKaderId: r.approach_kader_id || undefined,
+      approachNotes: r.approach_notes || undefined
     }));
     res.json(members);
   } catch (error) {
@@ -262,8 +290,8 @@ app.post('/api/members', async (req, res) => {
   try {
     const m = req.body;
     await pool.query(
-      `INSERT INTO members (id, name, kta_number, nik, role, kecamatan, desa, tps, photo_url, lat, lng, phone, status, join_date, parent_id, dapil, party_affiliation) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO members (id, name, kta_number, nik, role, kecamatan, desa, tps, photo_url, lat, lng, phone, status, join_date, parent_id, dapil, party_affiliation, approach_status, approach_kader_id, approach_notes) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          name = VALUES(name),
          kta_number = VALUES(kta_number),
@@ -278,11 +306,15 @@ app.post('/api/members', async (req, res) => {
          status = VALUES(status),
          parent_id = VALUES(parent_id),
          dapil = VALUES(dapil),
-         party_affiliation = VALUES(party_affiliation)`,
+         party_affiliation = VALUES(party_affiliation),
+         approach_status = VALUES(approach_status),
+         approach_kader_id = VALUES(approach_kader_id),
+         approach_notes = VALUES(approach_notes)`,
       [
         m.id, m.name, m.ktaNumber, m.nik, m.role, m.kecamatan, m.desa, m.tps, 
         m.photoUrl, m.lat, m.lng, m.phone, m.status || 'ACTIVE', m.joinDate, 
-        m.parentId || null, m.dapil || null, m.partyAffiliation || null
+        m.parentId || null, m.dapil || null, m.partyAffiliation || null,
+        m.approachStatus || null, m.approachKaderId || null, m.approachNotes || null
       ]
     );
     res.json({ success: true, member: m });
