@@ -780,8 +780,6 @@ app.post('/api/logistics/history', async (req, res) => {
   }
 });
 
-});
-
 // ==================== 12. ACTIVITIES ROUTE ====================
 
 app.get('/api/activities', async (req, res) => {
