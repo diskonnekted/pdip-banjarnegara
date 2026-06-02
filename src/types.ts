@@ -148,5 +148,17 @@ export interface PartyActivity {
   budgetOther: number;
   budgetTotal: number;
   reportDescription?: string;
-  reportPhoto?: string;
+}
+
+export interface TpsMapping {
+  id: string;
+  namaTps: string;
+  kecamatan: string;
+  desa: string;
+  lat: number;
+  lng: number;
+  zona: 'merah' | 'kuning' | 'hijau';
+  dptCount: number;
+  lastUpdatedBy: string;
+  lastUpdatedDate: string;
 }

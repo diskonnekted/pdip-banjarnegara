@@ -175,4 +175,18 @@ CREATE TABLE IF NOT EXISTS activities (
     report_photo LONGTEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 13. Tabel TPS Mapping (Zona Merah, Kuning, Hijau)
+CREATE TABLE IF NOT EXISTS tps_mapping (
+    id VARCHAR(50) PRIMARY KEY,
+    nama_tps VARCHAR(100) NOT NULL,
+    kecamatan VARCHAR(50) NOT NULL,
+    desa VARCHAR(50) NOT NULL,
+    lat DOUBLE NOT NULL,
+    lng DOUBLE NOT NULL,
+    zona VARCHAR(10) NOT NULL, -- 'merah', 'kuning', 'hijau'
+    dpt_count INT NOT NULL DEFAULT 0,
+    last_updated_by VARCHAR(100) NOT NULL,
+    last_updated_date VARCHAR(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 

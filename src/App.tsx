@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Map, BookOpen, Truck, MessageSquare, BarChart3, Plus, Search, Calendar,
   MapPin, Award, Settings, ListCollapse, LogOut, Lock, Mail, Wallet, Coins,
-  Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye, Calculator
+  Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye, Calculator,
+  LayoutList, Locate
 } from 'lucide-react';
 import SainteLagueCalculator from './components/SainteLagueCalculator';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping } from './types';
 import { 
   BANJARNEGARA_REGIONS, KECAMATAN_COORDS, INITIAL_MEMBERS, 
   INITIAL_LOGISTICS, INITIAL_ORDERS, INITIAL_ASPIRATIONS, 
   QUIZ_QUESTIONS, INITIAL_QUICK_COUNT, INITIAL_REPORTS, INITIAL_MESSAGES,
-  INITIAL_FUNDS, INITIAL_STOCK_HISTORY, INITIAL_ACTIVITIES
+  INITIAL_FUNDS, INITIAL_STOCK_HISTORY, INITIAL_ACTIVITIES, INITIAL_TPS_MAPPING
 } from './mockData';
 import { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
 
@@ -35,6 +36,27 @@ const createCustomMarker = (role: string) => {
       </div>
     `,
     className: 'custom-marker',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+};
+
+// TPS square marker
+const createTpsMarker = (zona: 'merah' | 'kuning' | 'hijau') => {
+  let color = '#EF4444'; // default red
+  if (zona === 'merah') color = '#DC2626'; // red-600
+  if (zona === 'kuning') color = '#EAB308'; // yellow-500
+  if (zona === 'hijau') color = '#22C55E'; // green-500
+
+  return L.divIcon({
+    html: `
+      <div class="relative w-8 h-8 flex items-center justify-center">
+        <div class="relative w-6 h-6 rounded-md border-2 border-white shadow-lg flex items-center justify-center" style="background-color: ${color};">
+          <span class="w-1.5 h-1.5 bg-white rounded-sm"></span>
+        </div>
+      </div>
+    `,
+    className: 'tps-marker',
     iconSize: [32, 32],
     iconAnchor: [16, 16]
   });
@@ -938,8 +960,10 @@ export default function App() {
                 privateMessages: INITIAL_MESSAGES,
                 operationalFunds: INITIAL_FUNDS,
                 logisticsStockHistory: INITIAL_STOCK_HISTORY,
-                activities: INITIAL_ACTIVITIES
-              })
+                activities: INITIAL_ACTIVITIES,
+                tpsMapping: INITIAL_TPS_MAPPING
+                })
+
             });
             if (!seedRes.ok) throw new Error('Seeding failed');
             console.log('Database seeded successfully.');
@@ -959,7 +983,8 @@ export default function App() {
               dbLogs,
               dbFunds,
               dbStockHistory,
-              dbActivities
+              dbActivities,
+              dbTpsMapping
             ] = await Promise.all([
               fetch('/api/members').then(r => r.json()),
               fetch('/api/logistics').then(r => r.json()),
@@ -972,7 +997,8 @@ export default function App() {
               fetch('/api/audit-logs').then(r => r.json()),
               fetch('/api/funds').then(r => r.json()).catch(() => []),
               fetch('/api/logistics/history').then(r => r.json()).catch(() => []),
-              fetch('/api/activities').then(r => r.json()).catch(() => [])
+              fetch('/api/activities').then(r => r.json()).catch(() => []),
+              fetch('/api/tps-mapping').then(r => r.json()).catch(() => [])
             ]);
 
             if (dbMembers) setMembers(dbMembers);
@@ -987,6 +1013,7 @@ export default function App() {
             if (dbFunds) setFunds(dbFunds);
             if (dbStockHistory) setStockHistory(dbStockHistory);
             if (dbActivities) setActivities(dbActivities);
+            if (dbTpsMapping) setTpsData(dbTpsMapping);
           }
         }
       } catch (error) {
@@ -1388,7 +1415,38 @@ export default function App() {
 
   // Leaflet Map Center State
   const [mapCenter, setMapCenter] = useState<[number, number]>([-7.3996, 109.6976]);
+  const [gisMode, setGisMode] = useState<'kader' | 'tps'>('kader');
+  const [tpsData, setTpsData] = useState<TpsMapping[]>(INITIAL_TPS_MAPPING);
+  const [tpsSearch, setTpsSearch] = useState('');
 
+  const filteredTpsData = tpsData.filter(t => 
+    t.namaTps.toLowerCase().includes(tpsSearch.toLowerCase()) ||
+    t.desa.toLowerCase().includes(tpsSearch.toLowerCase()) ||
+    t.kecamatan.toLowerCase().includes(tpsSearch.toLowerCase())
+  );
+
+  const handleTpsZoneChange = (id: string, newZone: 'merah' | 'kuning' | 'hijau') => {
+    const updatedDate = new Date().toISOString().split('T')[0];
+    setTpsData(prev => prev.map(tps => 
+      tps.id === id 
+        ? { ...tps, zona: newZone, lastUpdatedDate: updatedDate, lastUpdatedBy: currentUser.name } 
+        : tps
+    ));
+
+    if (isDbConnected) {
+      fetch(`/api/tps-mapping/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          zona: newZone, 
+          lastUpdatedBy: currentUser.name, 
+          lastUpdatedDate: updatedDate 
+        })
+      }).catch(err => console.error('Error updating TPS zone:', err));
+    }
+
+    pushAuditLog(`Mengubah status zona TPS ID: ${id} menjadi ${newZone.toUpperCase()}`);
+  };
   // Handle Login Submit
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -4045,31 +4103,67 @@ export default function App() {
               <p className="text-xs text-gray-400 mt-1">Pemetaan presisi berbasis koordinat GPS rumah anggota hasil rekrutan di Kabupaten Banjarnegara</p>
             </div>
 
-            {/* Legenda */}
-            <div className="flex flex-wrap gap-4 items-center bg-pdip-metal p-4 rounded-xl border border-red-950/20 shadow-md text-xs">
-              <span className="font-bold uppercase tracking-wider text-gray-400">Filter Peta Sebaran:</span>
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 bg-purple-600 rounded-full border border-white"></span>
-                <span>Super Admin</span>
+            {/* GIS Mode Toggler & Statistics */}
+            <div className="bg-pdip-metal p-4 rounded-xl border border-red-950/20 shadow-md">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                <div className="flex bg-pdip-black p-1 rounded-lg border border-red-900/30">
+                  <button
+                    onClick={() => setGisMode('kader')}
+                    className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${gisMode === 'kader' ? 'bg-pdip-red text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Sebaran Kader
+                  </button>
+                  <button
+                    onClick={() => setGisMode('tps')}
+                    className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${gisMode === 'tps' ? 'bg-pdip-red text-white shadow' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Pemetaan TPS
+                  </button>
+                </div>
+                
+                {gisMode === 'tps' && (
+                  <div className="flex gap-4">
+                    <div className="bg-red-950/30 px-3 py-1.5 rounded-lg border border-red-900/50 flex flex-col items-center">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">TPS Merah</span>
+                      <span className="text-lg font-black text-red-500">{tpsData.filter(t => t.zona === 'merah').length}</span>
+                    </div>
+                    <div className="bg-amber-950/30 px-3 py-1.5 rounded-lg border border-amber-900/50 flex flex-col items-center">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">TPS Kuning</span>
+                      <span className="text-lg font-black text-amber-500">{tpsData.filter(t => t.zona === 'kuning').length}</span>
+                    </div>
+                    <div className="bg-emerald-950/30 px-3 py-1.5 rounded-lg border border-emerald-900/50 flex flex-col items-center">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">TPS Hijau</span>
+                      <span className="text-lg font-black text-emerald-500">{tpsData.filter(t => t.zona === 'hijau').length}</span>
+                    </div>
+                  </div>
+                )}
+                
+                <button 
+                  onClick={() => setMapCenter([-7.3996, 109.6976])}
+                  className="bg-pdip-darkgray hover:bg-gray-800 text-white font-semibold px-3 py-1.5 rounded border border-red-900/20 transition flex items-center gap-1"
+                >
+                  <RefreshCw size={12} /> Reset Peta
+                </button>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 bg-amber-500 rounded-full border border-white"></span>
-                <span>Pimpinan DPC</span>
+
+              {/* Dynamic Legenda */}
+              <div className="flex flex-wrap gap-4 items-center text-xs">
+                <span className="font-bold uppercase tracking-wider text-gray-400">Filter Peta Sebaran:</span>
+                {gisMode === 'kader' ? (
+                  <>
+                    <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 bg-purple-600 rounded-full border border-white"></span><span>Super Admin</span></div>
+                    <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 bg-amber-500 rounded-full border border-white"></span><span>Pimpinan DPC</span></div>
+                    <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 bg-red-600 rounded-full border border-white"></span><span>Anggota Dewan</span></div>
+                    <div className="flex items-center gap-2"><span className="w-3.5 h-3.5 bg-red-400 rounded-full border border-white"></span><span>Kader / Downline</span></div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 bg-red-600 rounded-sm border border-white"></span><span>Merah (Basis Kuat)</span></div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 bg-yellow-500 rounded-sm border border-white"></span><span>Kuning (Swing)</span></div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-3 bg-green-500 rounded-sm border border-white"></span><span>Hijau (Basis Lawan)</span></div>
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 bg-red-600 rounded-full border border-white"></span>
-                <span>Anggota Dewan</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 bg-red-400 rounded-full border border-white"></span>
-                <span>Kader / Downline</span>
-              </div>
-              <button 
-                onClick={() => setMapCenter([-7.3996, 109.6976])}
-                className="ml-auto bg-pdip-darkgray hover:bg-gray-800 text-white font-semibold px-3 py-1.5 rounded border border-red-900/20 transition flex items-center gap-1"
-              >
-                <RefreshCw size={12} /> Reset Pusat Peta
-              </button>
             </div>
 
             {/* Map Container */}
@@ -4128,60 +4222,223 @@ export default function App() {
                   />
                 )}
                 <MapCenterController center={mapCenter} />
-                {visibleMembersList.map((m) => {
-                  let jitterLat = 0;
-                  let jitterLng = 0;
-                  if (m.id.startsWith('dpt-') || m.role === 'anggota') {
-                    // Deterministic offset based on ID character values
-                    const charSum = m.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + m.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    jitterLat = (((charSum % 40) - 20) * 0.0006); // range between -0.012 and +0.012 degrees
-                    jitterLng = ((((charSum * 3) % 40) - 20) * 0.0006);
-                  }
+                {gisMode === 'kader' ? (
+                  visibleMembersList.map((m) => {
+                    let jitterLat = 0;
+                    let jitterLng = 0;
+                    if (m.id.startsWith('dpt-') || m.role === 'anggota') {
+                      // Deterministic offset based on ID character values
+                      const charSum = m.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + m.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                      jitterLat = (((charSum % 40) - 20) * 0.0006); // range between -0.012 and +0.012 degrees
+                      jitterLng = ((((charSum * 3) % 40) - 20) * 0.0006);
+                    }
 
-                  return (
+                    return (
+                      <Marker 
+                        key={m.id} 
+                        position={[m.lat + jitterLat, m.lng + jitterLng]} 
+                        icon={createCustomMarker(m.role)}
+                      >
+                        <Popup>
+                          <div className="w-56 font-sans">
+                            <div className="flex items-center gap-2 mb-2 border-b border-red-900/10 pb-2">
+                              <img 
+                                src={m.photoUrl} 
+                                alt={m.name} 
+                                className="w-10 h-10 rounded-full object-cover border border-red-900/20"
+                              />
+                              <div>
+                                <h4 className="font-bold text-sm text-white leading-tight">{m.name}</h4>
+                                <span className="text-[10px] text-red-500 font-mono font-bold block">{m.ktaNumber}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-1 text-xs text-gray-300">
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Jabatan:</span>
+                                <span className="font-semibold text-white">{m.role.toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Kecamatan:</span>
+                                <span className="font-semibold text-white">{m.kecamatan}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Desa:</span>
+                                <span className="font-semibold text-white">{m.desa}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">TPS:</span>
+                                <span className="font-semibold text-red-400">{m.tps}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  })
+                ) : (
+                  tpsData.map((tps) => (
                     <Marker 
-                      key={m.id} 
-                      position={[m.lat + jitterLat, m.lng + jitterLng]} 
-                      icon={createCustomMarker(m.role)}
+                      key={tps.id} 
+                      position={[tps.lat, tps.lng]} 
+                      icon={createTpsMarker(tps.zona)}
                     >
                       <Popup>
                         <div className="w-56 font-sans">
-                          <div className="flex items-center gap-2 mb-2 border-b border-red-900/10 pb-2">
-                            <img 
-                              src={m.photoUrl} 
-                              alt={m.name} 
-                              className="w-10 h-10 rounded-full object-cover border border-red-900/20"
-                            />
-                            <div>
-                              <h4 className="font-bold text-sm text-white leading-tight">{m.name}</h4>
-                              <span className="text-[10px] text-red-500 font-mono font-bold block">{m.ktaNumber}</span>
+                          <div className="mb-2 border-b border-red-900/10 pb-2">
+                            <h4 className="font-bold text-sm text-white leading-tight">{tps.namaTps}</h4>
+                            <span className="text-[10px] text-gray-400 block">{tps.desa}, Kec. {tps.kecamatan}</span>
+                          </div>
+                          <div className="space-y-2 text-xs text-gray-300 mb-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-400">Potensi DPT:</span>
+                              <span className="font-bold text-white bg-pdip-black px-2 py-0.5 rounded border border-gray-700">{tps.dptCount}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-400">Status Saat Ini:</span>
+                              <span className={`font-bold uppercase text-[10px] px-2 py-0.5 rounded border ${
+                                tps.zona === 'merah' ? 'bg-red-950 text-red-400 border-red-900/50' : 
+                                tps.zona === 'kuning' ? 'bg-amber-950 text-amber-400 border-amber-900/50' : 
+                                'bg-emerald-950 text-emerald-400 border-emerald-900/50'
+                              }`}>{tps.zona}</span>
+                            </div>
+                            <div className="text-[9px] text-gray-500 italic mt-1">
+                              Diperbarui: {tps.lastUpdatedDate} oleh {tps.lastUpdatedBy}
                             </div>
                           </div>
-                          <div className="space-y-1 text-xs text-gray-300">
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Jabatan:</span>
-                              <span className="font-semibold text-white">{m.role.toUpperCase()}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Kecamatan:</span>
-                              <span className="font-semibold text-white">{m.kecamatan}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Desa:</span>
-                              <span className="font-semibold text-white">{m.desa}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">TPS:</span>
-                              <span className="font-semibold text-red-400">{m.tps}</span>
+                          
+                          <div className="border-t border-red-900/20 pt-3">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">Ubah Status Zona:</span>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => handleTpsZoneChange(tps.id, 'merah')}
+                                className="flex-1 bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold py-1.5 rounded transition"
+                              >Merah</button>
+                              <button 
+                                onClick={() => handleTpsZoneChange(tps.id, 'kuning')}
+                                className="flex-1 bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-bold py-1.5 rounded transition"
+                              >Kuning</button>
+                              <button 
+                                onClick={() => handleTpsZoneChange(tps.id, 'hijau')}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold py-1.5 rounded transition"
+                              >Hijau</button>
                             </div>
                           </div>
                         </div>
                       </Popup>
                     </Marker>
-                  );
-                })}
+                  ))
+                )}
               </MapContainer>
             </div>
+
+            {/* TPS Mapping Management Table (Visible in TPS Mode) */}
+            {gisMode === 'tps' && (
+              <div className="bg-pdip-metal rounded-xl border border-red-950/20 shadow-xl overflow-hidden animate-slideUp">
+                <div className="bg-pdip-black/40 px-6 py-4 border-b border-red-900/10 flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <LayoutList size={18} className="text-pdip-red" /> Daftar Pemetaan Strategis TPS
+                    </h3>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Manajemen Basis Data & Penentuan Status Kerawanan Wilayah</p>
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto">
+                    <div className="relative flex-grow md:flex-grow-0">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="Cari TPS/Desa/Kec..." 
+                        value={tpsSearch}
+                        onChange={(e) => setTpsSearch(e.target.value)}
+                        className="bg-pdip-black border border-red-900/30 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-red-500 w-full md:w-64 transition-all"
+                      />
+                    </div>
+                    <button className="bg-pdip-red hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-red-900/20">
+                      <Plus size={14} /> Tambah TPS
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-pdip-darkgray text-gray-400 uppercase text-[10px] font-bold tracking-wider">
+                      <tr>
+                        <th className="px-6 py-3 border-b border-red-900/10">Identitas TPS</th>
+                        <th className="px-6 py-3 border-b border-red-900/10">Wilayah / Desa</th>
+                        <th className="px-6 py-3 border-b border-red-900/10 text-center">Estimasi DPT</th>
+                        <th className="px-6 py-3 border-b border-red-900/10">Klasifikasi Zona</th>
+                        <th className="px-6 py-3 border-b border-red-900/10">Log Update</th>
+                        <th className="px-6 py-3 border-b border-red-900/10 text-right">Navigasi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-900/5">
+                      {filteredTpsData.length > 0 ? (
+                        filteredTpsData.map((tps) => (
+                          <tr key={tps.id} className="hover:bg-red-900/5 transition-colors group">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">{tps.namaTps}</div>
+                              <div className="text-[9px] text-gray-500 font-mono tracking-tighter">{tps.id}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-xs text-gray-300 font-semibold">{tps.desa}</div>
+                              <div className="text-[10px] text-gray-500">Kecamatan {tps.kecamatan}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className="text-sm font-mono font-bold text-white bg-pdip-black px-2 py-1 rounded border border-gray-800">{tps.dptCount}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex gap-1.5">
+                                {(['merah', 'kuning', 'hijau'] as const).map((z) => (
+                                  <button
+                                    key={z}
+                                    onClick={() => handleTpsZoneChange(tps.id, z)}
+                                    className={`px-2 py-1 rounded text-[8px] font-black uppercase border transition-all ${
+                                      tps.zona === z 
+                                        ? z === 'merah' ? 'bg-red-600 border-red-400 text-white shadow-[0_0_8px_rgba(220,38,38,0.4)] scale-105' :
+                                          z === 'kuning' ? 'bg-amber-500 border-amber-300 text-white shadow-[0_0_8px_rgba(245,158,11,0.4)] scale-105' :
+                                          'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)] scale-105'
+                                        : 'bg-pdip-black/50 border-gray-800 text-gray-500 hover:border-gray-600 grayscale opacity-60 hover:opacity-100 hover:grayscale-0'
+                                    }`}
+                                  >
+                                    {z}
+                                  </button>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-[10px] text-gray-300 font-medium">{tps.lastUpdatedBy}</div>
+                              <div className="text-[9px] text-gray-500 italic flex items-center gap-1">
+                                <Calendar size={10} /> {tps.lastUpdatedDate}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <button 
+                                onClick={() => {
+                                  setMapCenter([tps.lat, tps.lng]);
+                                  window.scrollTo({ top: 100, behavior: 'smooth' });
+                                }}
+                                className="p-2 text-gray-400 hover:text-red-400 transition-all bg-pdip-black/30 rounded-lg border border-red-900/10 hover:border-red-500/30 hover:scale-110 active:scale-95"
+                                title="Lihat di Peta"
+                              >
+                                <Locate size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2 opacity-30">
+                              <Search size={32} />
+                              <p className="text-sm font-bold">Data TPS tidak ditemukan</p>
+                              <button onClick={() => setTpsSearch('')} className="text-[10px] text-red-500 underline uppercase tracking-widest">Reset Pencarian</button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

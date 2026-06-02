@@ -1,4 +1,4 @@
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory, PartyActivity } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping } from './types';
 
 // Comprehensive map of all 20 Kecamatan and their major Desas in Kabupaten Banjarnegara
 export const BANJARNEGARA_REGIONS: Record<string, string[]> = {
@@ -3337,3 +3337,101 @@ export const INITIAL_ACTIVITIES: PartyActivity[] = [
   }
 ];
 
+export const INITIAL_TPS_MAPPING: TpsMapping[] = [
+  {
+    id: "tps-bna-1",
+    namaTps: "TPS 01 Banjarnegara",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    lat: -7.3996,
+    lng: 109.6976,
+    zona: 'merah',
+    dptCount: 250,
+    lastUpdatedBy: "Admin DPC",
+    lastUpdatedDate: "2026-06-02"
+  },
+  {
+    id: "tps-bna-2",
+    namaTps: "TPS 02 Banjarnegara",
+    kecamatan: "Banjarnegara",
+    desa: "Semampir",
+    lat: -7.4020,
+    lng: 109.6900,
+    zona: 'kuning',
+    dptCount: 220,
+    lastUpdatedBy: "Korcam BNA",
+    lastUpdatedDate: "2026-06-01"
+  },
+  {
+    id: "tps-bawang-1",
+    namaTps: "TPS 01 Bawang",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    lat: -7.4110,
+    lng: 109.6600,
+    zona: 'hijau',
+    dptCount: 190,
+    lastUpdatedBy: "Admin DPC",
+    lastUpdatedDate: "2026-05-30"
+  },
+  {
+    id: "tps-bawang-2",
+    namaTps: "TPS 02 Bawang",
+    kecamatan: "Bawang",
+    desa: "Bawang",
+    lat: -7.4200,
+    lng: 109.6550,
+    zona: 'merah',
+    dptCount: 280,
+    lastUpdatedBy: "Ketua PAC Bawang",
+    lastUpdatedDate: "2026-06-01"
+  },
+  {
+    id: "tps-puj-1",
+    namaTps: "TPS 01 Punggelan",
+    kecamatan: "Punggelan",
+    desa: "Punggelan",
+    lat: -7.3195,
+    lng: 109.5841,
+    zona: 'kuning',
+    dptCount: 210,
+    lastUpdatedBy: "Admin DPC",
+    lastUpdatedDate: "2026-05-28"
+  },
+  {
+    id: "tps-puj-2",
+    namaTps: "TPS 02 Punggelan",
+    kecamatan: "Punggelan",
+    desa: "Tanjungtirta",
+    lat: -7.3210,
+    lng: 109.5800,
+    zona: 'merah',
+    dptCount: 245,
+    lastUpdatedBy: "Admin DPC",
+    lastUpdatedDate: "2026-06-02"
+  },
+  {
+    id: "tps-md-1",
+    namaTps: "TPS 01 Madukara",
+    kecamatan: "Madukara",
+    desa: "Madukara",
+    lat: -7.3689,
+    lng: 109.7289,
+    zona: 'hijau',
+    dptCount: 200,
+    lastUpdatedBy: "Korcam Madukara",
+    lastUpdatedDate: "2026-06-02"
+  },
+  {
+    id: "tps-md-2",
+    namaTps: "TPS 02 Madukara",
+    kecamatan: "Madukara",
+    desa: "Clapar",
+    lat: -7.3700,
+    lng: 109.7350,
+    zona: 'kuning',
+    dptCount: 175,
+    lastUpdatedBy: "Admin DPC",
+    lastUpdatedDate: "2026-05-29"
+  }
+];

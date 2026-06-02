@@ -41,6 +41,27 @@ const pool = mysql.createPool({
       await connection.query("ALTER TABLE members ADD COLUMN approach_notes TEXT NULL");
       console.log('Added column approach_notes to members');
     }
+
+    // Check if tps_mapping table exists, if not create it
+    const [tpsTables] = await connection.query("SHOW TABLES LIKE 'tps_mapping'");
+    if (tpsTables.length === 0) {
+      await connection.query(`
+        CREATE TABLE tps_mapping (
+          id VARCHAR(50) PRIMARY KEY,
+          nama_tps VARCHAR(100) NOT NULL,
+          kecamatan VARCHAR(50) NOT NULL,
+          desa VARCHAR(50) NOT NULL,
+          lat DOUBLE NOT NULL,
+          lng DOUBLE NOT NULL,
+          zona VARCHAR(10) NOT NULL,
+          dpt_count INT NOT NULL DEFAULT 0,
+          last_updated_by VARCHAR(100) NOT NULL,
+          last_updated_date VARCHAR(30) NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log('Created tps_mapping table');
+    }
+
     connection.release();
   } catch (err) {
     console.error('Migration failed or DB offline:', err.message);
@@ -92,10 +113,12 @@ app.post('/api/seed', async (req, res) => {
       quickCounts, 
       memberReports, 
       privateMessages,
-      operationalFunds,
+      operational_funds,
       logisticsStockHistory,
-      activities
-    } = req.body;
+      activities,
+      tpsMapping
+      } = req.body;
+
 
     console.log('Seeding database with frontend data...');
 
@@ -113,6 +136,7 @@ app.post('/api/seed', async (req, res) => {
     await connection.query('DELETE FROM quick_count_results');
     await connection.query('DELETE FROM operational_funds');
     await connection.query('DELETE FROM activities');
+    await connection.query('DELETE FROM tps_mapping');
 
     // 1. Seed Members (Group 1: without parentId first to satisfy self-referential FK)
     if (members && members.length > 0) {
@@ -230,6 +254,17 @@ app.post('/api/seed', async (req, res) => {
             act.budgetTransport, act.budgetMeals, act.budgetAccommodation, act.budgetOther, act.budgetTotal,
             act.reportDescription || null, act.reportPhoto || null
           ]
+        );
+      }
+    }
+
+    // 11. Seed TPS Mapping
+    if (tpsMapping && tpsMapping.length > 0) {
+      for (const t of tpsMapping) {
+        await connection.query(
+          `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [t.id, t.namaTps, t.kecamatan, t.desa, t.lat, t.lng, t.zona, t.dptCount, t.lastUpdatedBy, t.lastUpdatedDate]
         );
       }
     }
@@ -931,6 +966,77 @@ app.delete('/api/activities/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM activities WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 13. TPS MAPPING ROUTE ====================
+
+app.get('/api/tps-mapping', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM tps_mapping');
+    const tpsMapping = rows.map(r => ({
+      id: r.id,
+      namaTps: r.nama_tps,
+      kecamatan: r.kecamatan,
+      desa: r.desa,
+      lat: r.lat,
+      lng: r.lng,
+      zona: r.zona,
+      dptCount: r.dpt_count,
+      lastUpdatedBy: r.last_updated_by,
+      lastUpdatedDate: r.last_updated_date
+    }));
+    res.json(tpsMapping);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/tps-mapping', async (req, res) => {
+  try {
+    const tps = req.body;
+    await pool.query(
+      `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         nama_tps = VALUES(nama_tps),
+         kecamatan = VALUES(kecamatan),
+         desa = VALUES(desa),
+         lat = VALUES(lat),
+         lng = VALUES(lng),
+         zona = VALUES(zona),
+         dpt_count = VALUES(dpt_count),
+         last_updated_by = VALUES(last_updated_by),
+         last_updated_date = VALUES(last_updated_date)`,
+      [tps.id, tps.namaTps, tps.kecamatan, tps.desa, tps.lat, tps.lng, tps.zona, tps.dptCount, tps.lastUpdatedBy, tps.lastUpdatedDate]
+    );
+    res.json({ success: true, tpsMapping: tps });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/tps-mapping/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { zona, lastUpdatedBy, lastUpdatedDate } = req.body;
+    await pool.query(
+      'UPDATE tps_mapping SET zona = ?, last_updated_by = ?, last_updated_date = ? WHERE id = ?',
+      [zona, lastUpdatedBy, lastUpdatedDate, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/tps-mapping/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM tps_mapping WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
