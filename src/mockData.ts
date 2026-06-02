@@ -3606,3 +3606,58 @@ export const INITIAL_DDS_LOGS: DdsLog[] = [
     timestamp: "2026-06-02T10:30:00.000Z"
   }
 ];
+
+export const INITIAL_ADVOCACY_TICKETS: any[] = [
+  {
+    id: "adv-1",
+    citizenName: "Ibu Sumini",
+    citizenNik: "3304015405620001",
+    phone: "081234567001",
+    category: "BPJS",
+    title: "Advokasi BPJS Kesehatan Warga Sakit Kronis",
+    description: "Ibu Sumini mengalami sakit stroke ringan dan kesulitan berobat karena tidak memiliki kartu BPJS PBI (Penerima Bantuan Iuran). Membutuhkan fasilitasi pembuatan BPJS gratis sesegera mungkin.",
+    status: "diusulkan",
+    kaderId: "member-3",
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    photoUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=80",
+    createdAt: "2026-06-02T11:00:00.000Z"
+  },
+  {
+    id: "adv-2",
+    citizenName: "Anak Bpk Maryono (Randi)",
+    citizenNik: "3304011208150003",
+    phone: "081398765432",
+    category: "PIP/KIP",
+    title: "Pengajuan Program Indonesia Pintar (PIP) Anak Putus Sekolah",
+    description: "Anak Pak Maryono terancam putus sekolah dari tingkat SMP karena kendala biaya seragam dan buku. Kami mengusulkan beasiswa PIP melalui jalur aspirasi anggota Dewan Fraksi PDI Perjuangan.",
+    status: "diproses",
+    kaderId: "member-3",
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    photoUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80",
+    createdAt: "2026-06-02T12:30:00.000Z",
+    dewanNotes: "Usulan beasiswa PIP sudah diverifikasi oleh tim Fraksi dan saat ini berkas sedang dikoordinasikan dengan Dinas Pendidikan Kabupaten Banjarnegara untuk dicairkan pada termin berikutnya.",
+    dewanName: "Mega Wulandari"
+  },
+  {
+    id: "adv-3",
+    citizenName: "Warga RT 03 Dusun Krajan",
+    citizenNik: "3304021204850012",
+    phone: "085223344101",
+    category: "Air Bersih",
+    title: "Penyaluran Bantuan Pipa Air Bersih Dusun Krajan",
+    description: "Dusun Krajan mengalami krisis air bersih karena sumber mata air berjarak 1.5 km belum terhubung pipa. Membutuhkan pipa paralon dan pompa submersible darurat.",
+    status: "selesai",
+    kaderId: "member-2",
+    kaderName: "Mega Wulandari",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    photoUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    createdAt: "2026-06-01T09:00:00.000Z",
+    dewanNotes: "Bantuan pipa PVC sebanyak 45 unit dan 1 pompa submersible telah dikirim. Kader ranting bersama warga setempat telah melakukan gotong-royong pemasangan. Air bersih kini sudah mengalir ke bak penampungan dusun.",
+    dewanName: "Mega Wulandari"
+  }
+];

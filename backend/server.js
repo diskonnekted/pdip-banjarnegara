@@ -84,6 +84,32 @@ const pool = mysql.createPool({
       console.log('Created dds_logs table');
     }
 
+    // Check if advocacy_tickets table exists, if not create it
+    const [advocacyTables] = await connection.query("SHOW TABLES LIKE 'advocacy_tickets'");
+    if (advocacyTables.length === 0) {
+      await connection.query(`
+        CREATE TABLE advocacy_tickets (
+          id VARCHAR(50) PRIMARY KEY,
+          citizen_name VARCHAR(100) NOT NULL,
+          citizen_nik VARCHAR(30) NOT NULL,
+          phone VARCHAR(30) NULL,
+          category VARCHAR(50) NOT NULL,
+          title VARCHAR(200) NOT NULL,
+          description TEXT NOT NULL,
+          status VARCHAR(30) NOT NULL,
+          kader_id VARCHAR(50) NOT NULL,
+          kader_name VARCHAR(100) NOT NULL,
+          kecamatan VARCHAR(50) NOT NULL,
+          desa VARCHAR(50) NOT NULL,
+          photo_url TEXT NULL,
+          created_at VARCHAR(50) NOT NULL,
+          dewan_notes TEXT NULL,
+          dewan_name VARCHAR(100) NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log('Created advocacy_tickets table');
+    }
+
     connection.release();
   } catch (err) {
     console.error('Migration failed or DB offline:', err.message);
@@ -148,6 +174,7 @@ app.post('/api/seed', async (req, res) => {
     // Clear existing data in reverse order of foreign key dependencies
     await connection.query('DELETE FROM audit_logs');
     await connection.query('DELETE FROM dds_logs');
+    await connection.query('DELETE FROM advocacy_tickets');
     await connection.query('DELETE FROM private_messages');
     await connection.query('DELETE FROM member_reports');
     await connection.query('DELETE FROM ranting_proposals');
@@ -1332,6 +1359,144 @@ app.delete('/api/dds-logs/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM dds_logs WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 15. ADVOKASI RAKYAT ROUTES ====================
+
+const DEFAULT_ADVOCACY_TICKETS = [
+  {
+    id: "adv-1",
+    citizen_name: "Ibu Sumini",
+    citizen_nik: "3304015405620001",
+    phone: "081234567001",
+    category: "BPJS",
+    title: "Advokasi BPJS Kesehatan Warga Sakit Kronis",
+    description: "Ibu Sumini mengalami sakit stroke ringan dan kesulitan berobat karena tidak memiliki kartu BPJS PBI (Penerima Bantuan Iuran). Membutuhkan fasilitasi pembuatan BPJS gratis sesegera mungkin.",
+    status: "diusulkan",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    photo_url: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=80",
+    created_at: "2026-06-02T11:00:00.000Z",
+    dewan_notes: null,
+    dewan_name: null
+  },
+  {
+    id: "adv-2",
+    citizen_name: "Anak Bpk Maryono (Randi)",
+    citizen_nik: "3304011208150003",
+    phone: "081398765432",
+    category: "PIP/KIP",
+    title: "Pengajuan Program Indonesia Pintar (PIP) Anak Putus Sekolah",
+    description: "Anak Pak Maryono terancam putus sekolah dari tingkat SMP karena kendala biaya seragam dan buku. Kami mengusulkan beasiswa PIP melalui jalur aspirasi anggota Dewan Fraksi PDI Perjuangan.",
+    status: "diproses",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    photo_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80",
+    created_at: "2026-06-02T12:30:00.000Z",
+    dewan_notes: "Usulan beasiswa PIP sudah diverifikasi oleh tim Fraksi dan saat ini berkas sedang dikoordinasikan dengan Dinas Pendidikan Kabupaten Banjarnegara untuk dicairkan pada termin berikutnya.",
+    dewan_name: "Mega Wulandari"
+  },
+  {
+    id: "adv-3",
+    citizen_name: "Warga RT 03 Dusun Krajan",
+    citizen_nik: "3304021204850012",
+    phone: "085223344101",
+    category: "Air Bersih",
+    title: "Penyaluran Bantuan Pipa Air Bersih Dusun Krajan",
+    description: "Dusun Krajan mengalami krisis air bersih karena sumber mata air berjarak 1.5 km belum terhubung pipa. Membutuhkan pipa paralon dan pompa submersible darurat.",
+    status: "selesai",
+    kader_id: "member-2",
+    kader_name: "Mega Wulandari",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    photo_url: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    created_at: "2026-06-01T09:00:00.000Z",
+    dewan_notes: "Bantuan pipa PVC sebanyak 45 unit dan 1 pompa submersible telah dikirim. Kader ranting bersama warga setempat telah melakukan gotong-royong pemasangan. Air bersih kini sudah mengalir ke bak penampungan dusun.",
+    dewan_name: "Mega Wulandari"
+  }
+];
+
+app.get('/api/advocacy-tickets', async (req, res) => {
+  try {
+    let [rows] = await pool.query('SELECT * FROM advocacy_tickets');
+    
+    // Auto-seed if empty
+    if (rows.length === 0) {
+      console.log('advocacy_tickets table is empty. Auto-seeding defaults...');
+      for (const t of DEFAULT_ADVOCACY_TICKETS) {
+        await pool.query(
+          `INSERT INTO advocacy_tickets (id, citizen_name, citizen_nik, phone, category, title, description, status, kader_id, kader_name, kecamatan, desa, photo_url, created_at, dewan_notes, dewan_name) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [t.id, t.citizen_name, t.citizen_nik, t.phone, t.category, t.title, t.description, t.status, t.kader_id, t.kader_name, t.kecamatan, t.desa, t.photo_url, t.created_at, t.dewan_notes, t.dewan_name]
+        );
+      }
+      [rows] = await pool.query('SELECT * FROM advocacy_tickets');
+    }
+
+    const tickets = rows.map(r => ({
+      id: r.id,
+      citizenName: r.citizen_name,
+      citizenNik: r.citizen_nik,
+      phone: r.phone,
+      category: r.category,
+      title: r.title,
+      description: r.description,
+      status: r.status,
+      kaderId: r.kader_id,
+      kaderName: r.kader_name,
+      kecamatan: r.kecamatan,
+      desa: r.desa,
+      photoUrl: r.photo_url,
+      createdAt: r.created_at,
+      dewanNotes: r.dewan_notes,
+      dewanName: r.dewan_name
+    }));
+    res.json(tickets);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/advocacy-tickets', async (req, res) => {
+  try {
+    const t = req.body;
+    await pool.query(
+      `INSERT INTO advocacy_tickets (id, citizen_name, citizen_nik, phone, category, title, description, status, kader_id, kader_name, kecamatan, desa, photo_url, created_at, dewan_notes, dewan_name) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [t.id, t.citizenName, t.citizenNik, t.phone || null, t.category, t.title, t.description, t.status, t.kaderId, t.kaderName, t.kecamatan, t.desa, t.photoUrl || null, t.createdAt, t.dewanNotes || null, t.dewanName || null]
+    );
+    res.json({ success: true, ticket: t });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/advocacy-tickets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, dewanNotes, dewanName } = req.body;
+    await pool.query(
+      `UPDATE advocacy_tickets SET status = ?, dewan_notes = ?, dewan_name = ? WHERE id = ?`,
+      [status, dewanNotes || null, dewanName || null, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/advocacy-tickets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM advocacy_tickets WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

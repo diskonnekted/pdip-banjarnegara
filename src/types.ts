@@ -178,3 +178,22 @@ export interface DdsLog {
   lng: number;
   timestamp: string;
 }
+
+export interface AdvocacyTicket {
+  id: string;
+  citizenName: string;
+  citizenNik: string;
+  phone?: string;
+  category: 'BPJS' | 'PIP/KIP' | 'Air Bersih' | 'Jalan/Infrastruktur' | 'Lainnya';
+  title: string;
+  description: string;
+  status: 'diusulkan' | 'diproses' | 'selesai';
+  kaderId: string;
+  kaderName: string;
+  kecamatan: string;
+  desa: string;
+  photoUrl?: string;
+  createdAt: string;
+  dewanNotes?: string;
+  dewanName?: string;
+}
