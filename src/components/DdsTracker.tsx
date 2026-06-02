@@ -7,7 +7,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Member, DdsLog } from '../types';
-import { BANJARNEGARA_REGIONS } from '../mockData';
+import { BANJARNEGARA_REGIONS, KECAMATAN_COORDS } from '../mockData';
 import confetti from 'canvas-confetti';
 
 interface DdsTrackerProps {
@@ -571,13 +571,22 @@ export default function DdsTracker({ logs, members, currentUser, onAddLog }: Dds
               <select 
                 value={selectedKecamatan}
                 onChange={(e) => {
-                  setSelectedKecamatan(e.target.value);
+                  const val = e.target.value;
+                  setSelectedKecamatan(val);
                   // Centering coordinates dynamically if a specific region is filtered
-                  if (e.target.value !== 'all') {
-                    setMapZoom(13);
+                  if (val !== 'all') {
+                    const coords = KECAMATAN_COORDS[val];
+                    if (coords) {
+                      setMapCenter([coords.lat, coords.lng]);
+                      setMapZoom(13);
+                    }
+                  } else {
+                    // Reset to central Banjarnegara zoom/coords
+                    setMapCenter([-7.3996, 109.6976]);
+                    setMapZoom(11);
                   }
                 }}
-                className="bg-pdip-black border border-red-900/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 appearance-none transition-all cursor-pointer font-semibold"
+                className="bg-pdip-black border border-red-900/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 appearance-none transition-all cursor-pointer font-semibold pr-8"
               >
                 <option value="all">Semua Kecamatan</option>
                 {allKecamatans.map((kec) => (
