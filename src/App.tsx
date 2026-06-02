@@ -3,9 +3,10 @@ import {
   Users, Map, BookOpen, Truck, MessageSquare, BarChart3, Plus, Search, Calendar,
   MapPin, Award, Settings, ListCollapse, LogOut, Lock, Mail, Wallet, Coins,
   Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye, Calculator,
-  LayoutList, Locate
+  LayoutList, Locate, Target
 } from 'lucide-react';
 import SainteLagueCalculator from './components/SainteLagueCalculator';
+import KtaTracker from './components/KtaTracker';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
@@ -910,7 +911,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
@@ -3398,6 +3399,7 @@ export default function App() {
             {[
               { id: 'dashboard', label: 'Dasbor Peran', icon: Shield },
               { id: 'keanggotaan', label: 'Struktur & Downline', icon: Users },
+              { id: 'tracker-kta', label: 'Tracker Target KTA', icon: Target },
               { id: 'dpt', label: 'Daftar DPT Wilayah', icon: ListCollapse },
               { id: 'laporan', label: 'Laporan & Peristiwa', icon: Award },
               { id: 'perpesanan', label: 'Perpesanan Private', icon: Mail },
@@ -5973,6 +5975,15 @@ export default function App() {
         {/* ==================== SAINTE LAGUE CALCULATOR VIEW ==================== */}
         {activeTab === 'sainte-lague' && (
           <SainteLagueCalculator />
+        )}
+
+        {/* ==================== TRACKER TARGET KTA VIEW ==================== */}
+        {activeTab === 'tracker-kta' && (
+          <KtaTracker 
+            members={members}
+            currentUser={currentUser}
+            onOpenAddMemberModal={() => setShowAddMemberModal(true)}
+          />
         )}
 
         {/* ==================== PRIVATE MESSAGING VIEW ==================== */}
