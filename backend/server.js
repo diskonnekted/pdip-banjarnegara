@@ -62,6 +62,28 @@ const pool = mysql.createPool({
       console.log('Created tps_mapping table');
     }
 
+    // Check if dds_logs table exists, if not create it
+    const [ddsTables] = await connection.query("SHOW TABLES LIKE 'dds_logs'");
+    if (ddsTables.length === 0) {
+      await connection.query(`
+        CREATE TABLE dds_logs (
+          id VARCHAR(50) PRIMARY KEY,
+          kader_id VARCHAR(50) NOT NULL,
+          kader_name VARCHAR(100) NOT NULL,
+          kecamatan VARCHAR(50) NOT NULL,
+          desa VARCHAR(50) NOT NULL,
+          resident_name VARCHAR(100) NOT NULL,
+          phone VARCHAR(30) NULL,
+          notes TEXT NOT NULL,
+          photo_url TEXT NOT NULL,
+          lat DOUBLE NOT NULL,
+          lng DOUBLE NOT NULL,
+          timestamp VARCHAR(50) NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log('Created dds_logs table');
+    }
+
     connection.release();
   } catch (err) {
     console.error('Migration failed or DB offline:', err.message);
@@ -116,7 +138,8 @@ app.post('/api/seed', async (req, res) => {
       operationalFunds,
       logisticsStockHistory,
       activities,
-      tpsMapping
+      tpsMapping,
+      ddsLogs
       } = req.body;
 
 
@@ -124,6 +147,7 @@ app.post('/api/seed', async (req, res) => {
 
     // Clear existing data in reverse order of foreign key dependencies
     await connection.query('DELETE FROM audit_logs');
+    await connection.query('DELETE FROM dds_logs');
     await connection.query('DELETE FROM private_messages');
     await connection.query('DELETE FROM member_reports');
     await connection.query('DELETE FROM ranting_proposals');
@@ -265,6 +289,17 @@ app.post('/api/seed', async (req, res) => {
           `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [t.id, t.namaTps, t.kecamatan, t.desa, t.lat, t.lng, t.zona, t.dptCount, t.lastUpdatedBy, t.lastUpdatedDate]
+        );
+      }
+    }
+
+    // 12. Seed DDS Logs
+    if (ddsLogs && ddsLogs.length > 0) {
+      for (const d of ddsLogs) {
+        await connection.query(
+          `INSERT INTO dds_logs (id, kader_id, kader_name, kecamatan, desa, resident_name, phone, notes, photo_url, lat, lng, timestamp) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [d.id, d.kaderId, d.kaderName, d.kecamatan, d.desa, d.residentName, d.phone || null, d.notes, d.photoUrl, d.lat, d.lng, d.timestamp]
         );
       }
     }
@@ -1063,6 +1098,240 @@ app.delete('/api/tps-mapping/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM tps_mapping WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 14. DDS TRACKER ROUTES ====================
+
+const DEFAULT_DDS_LOGS = [
+  {
+    id: "dds-log-1",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    resident_name: "Bapak Maryono",
+    phone: "081234567890",
+    notes: "Keluarga Bapak Maryono membutuhkan bantuan bibit padi unggul. Sangat respek dengan PDI-P.",
+    photo_url: "https://images.unsplash.com/photo-1595275372297-f58d4a07c3be?auto=format&fit=crop&w=600&q=80",
+    lat: -7.3992,
+    lng: 109.6970,
+    timestamp: "2026-06-02T08:30:00.000Z"
+  },
+  {
+    id: "dds-log-2",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    resident_name: "Ibu Sumarni",
+    phone: "081398765432",
+    notes: "Ibu Sumarni menyampaikan aspirasi perbaikan selokan jalan desa. Sudah ber-KTA.",
+    photo_url: "https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&w=600&q=80",
+    lat: -7.3998,
+    lng: 109.6982,
+    timestamp: "2026-06-02T09:10:00.000Z"
+  },
+  {
+    id: "dds-log-3",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    resident_name: "Bapak Slamet",
+    phone: "085600112233",
+    notes: "Sosialisasi program kartu tani PDIP. Respon warga sangat positif dan antusias.",
+    photo_url: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4005,
+    lng: 109.6965,
+    timestamp: "2026-06-02T10:05:00.000Z"
+  },
+  {
+    id: "dds-log-4",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Semampir",
+    resident_name: "Keluarga Handoko",
+    phone: "",
+    notes: "Pembagian stiker dan kaos partai di perumahan Semampir. Diterima dengan hangat.",
+    photo_url: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4022,
+    lng: 109.6895,
+    timestamp: "2026-06-02T11:20:00.000Z"
+  },
+  {
+    id: "dds-log-5",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Semampir",
+    resident_name: "Bapak Joko Widodo",
+    phone: "082155667788",
+    notes: "Diskusi santai mengenai harga pupuk subsidi yang langka. Butuh pendampingan PAC.",
+    photo_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4035,
+    lng: 109.6912,
+    timestamp: "2026-06-02T13:45:00.000Z"
+  },
+  {
+    id: "dds-log-6",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    resident_name: "Ibu Rahayu",
+    phone: "",
+    notes: "Menyerahkan brosur visi misi legislatif. Rumah berbendera merah.",
+    photo_url: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4010,
+    lng: 109.6945,
+    timestamp: "2026-06-02T14:30:00.000Z"
+  },
+  {
+    id: "dds-log-7",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    resident_name: "Bapak Sukarno",
+    phone: "081912345678",
+    notes: "Keluarga Bapak Sukarno meminta advokasi program KIP (Kartu Indonesia Pintar).",
+    photo_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4018,
+    lng: 109.6952,
+    timestamp: "2026-06-02T15:15:00.000Z"
+  },
+  {
+    id: "dds-log-8",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    resident_name: "Bapak Ahmad",
+    phone: "",
+    notes: "Kunjungan rutin gotong-royong. Warga siap mengawal perolehan suara PDIP di TPS setempat.",
+    photo_url: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4025,
+    lng: 109.6938,
+    timestamp: "2026-06-02T16:00:00.000Z"
+  },
+  {
+    id: "dds-log-9",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Wangon",
+    resident_name: "Keluarga Bu Nanik",
+    phone: "085744332211",
+    notes: "Pembagian kalender partai. Bu Nanik merupakan simpatisan setia sejak pemilu lalu.",
+    photo_url: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4050,
+    lng: 109.6870,
+    timestamp: "2026-06-02T16:45:00.000Z"
+  },
+  {
+    id: "dds-log-10",
+    kader_id: "member-3",
+    kader_name: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Wangon",
+    resident_name: "Bapak Sugeng",
+    phone: "",
+    notes: "Kunjungan ke-10 hari ini! KPI Harian Terpenuhi. Warga menyampaikan terima kasih atas kepedulian partai.",
+    photo_url: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4062,
+    lng: 109.6885,
+    timestamp: "2026-06-02T17:20:00.000Z"
+  },
+  {
+    id: "dds-log-11",
+    kader_id: "member-2",
+    kader_name: "Mega Wulandari",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    resident_name: "Keluarga Ibu Lastri",
+    phone: "088899990000",
+    notes: "Sosialisasi Door-to-Door berjalan sukses. Menyerahkan cinderamata kaos banteng.",
+    photo_url: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4120,
+    lng: 109.6610,
+    timestamp: "2026-06-02T09:40:00.000Z"
+  },
+  {
+    id: "dds-log-12",
+    kader_id: "member-2",
+    kader_name: "Mega Wulandari",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    resident_name: "Bapak Heri",
+    phone: "",
+    notes: "Warga menyampaikan keluhan perihal irigasi pertanian tersumbat. Meminta advokasi dari dewan PDIP.",
+    photo_url: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4115,
+    lng: 109.6595,
+    timestamp: "2026-06-02T10:30:00.000Z"
+  }
+];
+
+app.get('/api/dds-logs', async (req, res) => {
+  try {
+    let [rows] = await pool.query('SELECT * FROM dds_logs');
+    
+    // Auto-seed if table is empty
+    if (rows.length === 0) {
+      console.log('dds_logs table is empty. Auto-seeding default DDS logs...');
+      for (const d of DEFAULT_DDS_LOGS) {
+        await pool.query(
+          `INSERT INTO dds_logs (id, kader_id, kader_name, kecamatan, desa, resident_name, phone, notes, photo_url, lat, lng, timestamp) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [d.id, d.kader_id, d.kader_name, d.kecamatan, d.desa, d.resident_name, d.phone || null, d.notes, d.photo_url, d.lat, d.lng, d.timestamp]
+        );
+      }
+      [rows] = await pool.query('SELECT * FROM dds_logs');
+    }
+
+    const ddsLogs = rows.map(r => ({
+      id: r.id,
+      kaderId: r.kader_id,
+      kaderName: r.kader_name,
+      kecamatan: r.kecamatan,
+      desa: r.desa,
+      residentName: r.resident_name,
+      phone: r.phone,
+      notes: r.notes,
+      photoUrl: r.photo_url,
+      lat: r.lat,
+      lng: r.lng,
+      timestamp: r.timestamp
+    }));
+    res.json(ddsLogs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/dds-logs', async (req, res) => {
+  try {
+    const d = req.body;
+    await pool.query(
+      `INSERT INTO dds_logs (id, kader_id, kader_name, kecamatan, desa, resident_name, phone, notes, photo_url, lat, lng, timestamp) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [d.id, d.kaderId, d.kaderName, d.kecamatan, d.desa, d.residentName, d.phone || null, d.notes, d.photoUrl, d.lat, d.lng, d.timestamp]
+    );
+    res.json({ success: true, ddsLog: d });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/dds-logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM dds_logs WHERE id = ?', [id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -7,15 +7,17 @@ import {
 } from 'lucide-react';
 import SainteLagueCalculator from './components/SainteLagueCalculator';
 import KtaTracker from './components/KtaTracker';
+import DdsTracker from './components/DdsTracker';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping, DdsLog } from './types';
 import { 
   BANJARNEGARA_REGIONS, KECAMATAN_COORDS, INITIAL_MEMBERS, 
   INITIAL_LOGISTICS, INITIAL_ORDERS, INITIAL_ASPIRATIONS, 
   QUIZ_QUESTIONS, INITIAL_QUICK_COUNT, INITIAL_REPORTS, INITIAL_MESSAGES,
-  INITIAL_FUNDS, INITIAL_STOCK_HISTORY, INITIAL_ACTIVITIES, INITIAL_TPS_MAPPING
+  INITIAL_FUNDS, INITIAL_STOCK_HISTORY, INITIAL_ACTIVITIES, INITIAL_TPS_MAPPING,
+  INITIAL_DDS_LOGS
 } from './mockData';
 import { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
 
@@ -873,7 +875,7 @@ export default function App() {
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => {
     return window.innerWidth < 768;
   });
-  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast'>('beranda');
+  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast' | 'dds'>('beranda');
 
   // Broadcast / Pengumuman State
   const [broadcasts, setBroadcasts] = useState<any[]>(() => {
@@ -911,7 +913,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta' | 'dds-tracker'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
@@ -962,7 +964,8 @@ export default function App() {
                 operationalFunds: INITIAL_FUNDS,
                 logisticsStockHistory: INITIAL_STOCK_HISTORY,
                 activities: INITIAL_ACTIVITIES,
-                tpsMapping: INITIAL_TPS_MAPPING
+                tpsMapping: INITIAL_TPS_MAPPING,
+                ddsLogs: INITIAL_DDS_LOGS
                 })
 
             });
@@ -985,7 +988,8 @@ export default function App() {
               dbFunds,
               dbStockHistory,
               dbActivities,
-              dbTpsMapping
+              dbTpsMapping,
+              dbDdsLogs
             ] = await Promise.all([
               fetch('/api/members').then(r => r.json()),
               fetch('/api/logistics').then(r => r.json()),
@@ -999,7 +1003,8 @@ export default function App() {
               fetch('/api/funds').then(r => r.json()).catch(() => []),
               fetch('/api/logistics/history').then(r => r.json()).catch(() => []),
               fetch('/api/activities').then(r => r.json()).catch(() => []),
-              fetch('/api/tps-mapping').then(r => r.json()).catch(() => [])
+              fetch('/api/tps-mapping').then(r => r.json()).catch(() => []),
+              fetch('/api/dds-logs').then(r => r.json()).catch(() => [])
             ]);
 
             if (dbMembers) setMembers(dbMembers);
@@ -1015,6 +1020,7 @@ export default function App() {
             if (dbStockHistory) setStockHistory(dbStockHistory);
             if (dbActivities) setActivities(dbActivities);
             if (dbTpsMapping) setTpsData(dbTpsMapping);
+            if (dbDdsLogs) setDdsLogs(dbDdsLogs);
           }
         }
       } catch (error) {
@@ -1174,6 +1180,12 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_ACTIVITIES;
   });
 
+  // DDS Tracker Logs State
+  const [ddsLogs, setDdsLogs] = useState<DdsLog[]>(() => {
+    const saved = localStorage.getItem('pdip_dds_logs');
+    return saved ? JSON.parse(saved) : INITIAL_DDS_LOGS;
+  });
+
   // Activities Form & Modal States
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showActivityReportModal, setShowActivityReportModal] = useState(false);
@@ -1251,6 +1263,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pdip_activities', JSON.stringify(activities));
   }, [activities]);
+
+  useEffect(() => {
+    localStorage.setItem('pdip_dds_logs', JSON.stringify(ddsLogs));
+  }, [ddsLogs]);
 
   useEffect(() => {
     localStorage.setItem('pdip_broadcasts', JSON.stringify(broadcasts));
@@ -3320,6 +3336,17 @@ export default function App() {
 
             </div>
           )}
+          {/* TAB 5: DDS TRACKER */}
+          {mobileTab === 'dds' && (
+            <div className="animate-fadeIn">
+              <DdsTracker 
+                logs={ddsLogs}
+                members={members}
+                currentUser={currentUser}
+                onAddLog={(newLog) => setDdsLogs(prev => [newLog, ...prev])}
+              />
+            </div>
+          )}
 
         </div>
 
@@ -3328,6 +3355,7 @@ export default function App() {
           {[
             { id: 'beranda', label: 'Beranda', icon: Shield },
             { id: 'rekrut', label: 'Rekrut', icon: Plus },
+            { id: 'dds', label: 'DDS Tracker', icon: MapPin },
             { id: 'lapor', label: 'Lapor', icon: Award },
             { id: 'pesan_broadcast', label: 'Pesan', icon: Mail, badge: totalUnreadMessages }
           ].map(tab => {
@@ -3400,6 +3428,7 @@ export default function App() {
               { id: 'dashboard', label: 'Dasbor Peran', icon: Shield },
               { id: 'keanggotaan', label: 'Struktur & Downline', icon: Users },
               { id: 'tracker-kta', label: 'Tracker Target KTA', icon: Target },
+              { id: 'dds-tracker', label: 'DDS Tracker (Campaign)', icon: MapPin },
               { id: 'dpt', label: 'Daftar DPT Wilayah', icon: ListCollapse },
               { id: 'laporan', label: 'Laporan & Peristiwa', icon: Award },
               { id: 'perpesanan', label: 'Perpesanan Private', icon: Mail },
@@ -5983,6 +6012,16 @@ export default function App() {
             members={members}
             currentUser={currentUser}
             onOpenAddMemberModal={() => setShowAddMemberModal(true)}
+          />
+        )}
+
+        {/* ==================== DDS KAMPANYE TRACKER VIEW ==================== */}
+        {activeTab === 'dds-tracker' && (
+          <DdsTracker 
+            logs={ddsLogs}
+            members={members}
+            currentUser={currentUser}
+            onAddLog={(newLog) => setDdsLogs(prev => [newLog, ...prev])}
           />
         )}
 

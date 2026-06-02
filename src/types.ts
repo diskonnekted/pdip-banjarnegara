@@ -163,3 +163,18 @@ export interface TpsMapping {
   lastUpdatedBy: string;
   lastUpdatedDate: string;
 }
+
+export interface DdsLog {
+  id: string;
+  kaderId: string;
+  kaderName: string;
+  kecamatan: string;
+  desa: string;
+  residentName: string;
+  phone?: string;
+  notes: string;
+  photoUrl: string;
+  lat: number;
+  lng: number;
+  timestamp: string;
+}

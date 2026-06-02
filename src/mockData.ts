@@ -1,4 +1,4 @@
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuizQuestion, QuickCountResult, MemberReport, PrivateMessage, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping, DdsLog } from './types';
 
 // Comprehensive map of all 20 Kecamatan and their major Desas in Kabupaten Banjarnegara
 export const BANJARNEGARA_REGIONS: Record<string, string[]> = {
@@ -3433,5 +3433,176 @@ export const INITIAL_TPS_MAPPING: TpsMapping[] = [
     dptCount: 175,
     lastUpdatedBy: "Admin DPC",
     lastUpdatedDate: "2026-05-29"
+  }
+];
+
+export const INITIAL_DDS_LOGS: DdsLog[] = [
+  {
+    id: "dds-log-1",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    residentName: "Bapak Maryono",
+    phone: "081234567890",
+    notes: "Keluarga Bapak Maryono membutuhkan bantuan bibit padi unggul. Sangat respek dengan PDI-P.",
+    photoUrl: "https://images.unsplash.com/photo-1595275372297-f58d4a07c3be?auto=format&fit=crop&w=600&q=80",
+    lat: -7.3992,
+    lng: 109.6970,
+    timestamp: "2026-06-02T08:30:00.000Z"
+  },
+  {
+    id: "dds-log-2",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    residentName: "Ibu Sumarni",
+    phone: "081398765432",
+    notes: "Ibu Sumarni menyampaikan aspirasi perbaikan selokan jalan desa. Sudah ber-KTA.",
+    photoUrl: "https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&w=600&q=80",
+    lat: -7.3998,
+    lng: 109.6982,
+    timestamp: "2026-06-02T09:10:00.000Z"
+  },
+  {
+    id: "dds-log-3",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Krangandipan",
+    residentName: "Bapak Slamet",
+    phone: "085600112233",
+    notes: "Sosialisasi program kartu tani PDIP. Respon warga sangat positif dan antusias.",
+    photoUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4005,
+    lng: 109.6965,
+    timestamp: "2026-06-02T10:05:00.000Z"
+  },
+  {
+    id: "dds-log-4",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Semampir",
+    residentName: "Keluarga Handoko",
+    phone: "",
+    notes: "Pembagian stiker dan kaos partai di perumahan Semampir. Diterima dengan hangat.",
+    photoUrl: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4022,
+    lng: 109.6895,
+    timestamp: "2026-06-02T11:20:00.000Z"
+  },
+  {
+    id: "dds-log-5",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Semampir",
+    residentName: "Bapak Joko Widodo",
+    phone: "082155667788",
+    notes: "Diskusi santai mengenai harga pupuk subsidi yang langka. Butuh pendampingan PAC.",
+    photoUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4035,
+    lng: 109.6912,
+    timestamp: "2026-06-02T13:45:00.000Z"
+  },
+  {
+    id: "dds-log-6",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    residentName: "Ibu Rahayu",
+    phone: "",
+    notes: "Menyerahkan brosur visi misi legislatif. Rumah berbendera merah.",
+    photoUrl: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4010,
+    lng: 109.6945,
+    timestamp: "2026-06-02T14:30:00.000Z"
+  },
+  {
+    id: "dds-log-7",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    residentName: "Bapak Sukarno",
+    phone: "081912345678",
+    notes: "Keluarga Bapak Sukarno meminta advokasi program KIP (Kartu Indonesia Pintar).",
+    photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4018,
+    lng: 109.6952,
+    timestamp: "2026-06-02T15:15:00.000Z"
+  },
+  {
+    id: "dds-log-8",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Kutabanjarnegara",
+    residentName: "Bapak Ahmad",
+    phone: "",
+    notes: "Kunjungan rutin gotong-royong. Warga siap mengawal perolehan suara PDIP di TPS setempat.",
+    photoUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4025,
+    lng: 109.6938,
+    timestamp: "2026-06-02T16:00:00.000Z"
+  },
+  {
+    id: "dds-log-9",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Wangon",
+    residentName: "Keluarga Bu Nanik",
+    phone: "085744332211",
+    notes: "Pembagian kalender partai. Bu Nanik merupakan simpatisan setia sejak pemilu lalu.",
+    photoUrl: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4050,
+    lng: 109.6870,
+    timestamp: "2026-06-02T16:45:00.000Z"
+  },
+  {
+    id: "dds-log-10",
+    kaderId: "member-3", // Budi Santoso
+    kaderName: "Budi Santoso",
+    kecamatan: "Banjarnegara",
+    desa: "Wangon",
+    residentName: "Bapak Sugeng",
+    phone: "",
+    notes: "Kunjungan ke-10 hari ini! KPI Harian Terpenuhi. Warga menyampaikan terima kasih atas kepedulian partai.",
+    photoUrl: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4062,
+    lng: 109.6885,
+    timestamp: "2026-06-02T17:20:00.000Z"
+  },
+  {
+    id: "dds-log-11",
+    kaderId: "member-2", // Mega Wulandari
+    kaderName: "Mega Wulandari",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    residentName: "Keluarga Ibu Lastri",
+    phone: "088899990000",
+    notes: "Sosialisasi Door-to-Door berjalan sukses. Menyerahkan cinderamata kaos banteng.",
+    photoUrl: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4120,
+    lng: 109.6610,
+    timestamp: "2026-06-02T09:40:00.000Z"
+  },
+  {
+    id: "dds-log-12",
+    kaderId: "member-2", // Mega Wulandari
+    kaderName: "Mega Wulandari",
+    kecamatan: "Bawang",
+    desa: "Mantrianom",
+    residentName: "Bapak Heri",
+    phone: "",
+    notes: "Warga menyampaikan keluhan perihal irigasi pertanian tersumbat. Meminta advokasi dari dewan PDIP.",
+    photoUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    lat: -7.4115,
+    lng: 109.6595,
+    timestamp: "2026-06-02T10:30:00.000Z"
   }
 ];
