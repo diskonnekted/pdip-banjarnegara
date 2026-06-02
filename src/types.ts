@@ -197,3 +197,16 @@ export interface AdvocacyTicket {
   dewanNotes?: string;
   dewanName?: string;
 }
+
+export interface Milestone {
+  id: string;
+  title: string;
+  quarter: string;
+  year: number;
+  phase: string;
+  description: string;
+  completed: boolean;
+  completedAt?: string;
+  completedBy?: string;
+  notes?: string;
+}

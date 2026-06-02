@@ -3661,3 +3661,154 @@ export const INITIAL_ADVOCACY_TICKETS: any[] = [
     dewanName: "Mega Wulandari"
   }
 ];
+
+export const INITIAL_MILESTONES: any[] = [
+  {
+    id: "tw-1-2026",
+    title: "Pendataan Aset & Pemetaan Wilayah DPC (Audit Awal)",
+    quarter: "TW I",
+    year: 2026,
+    phase: "Konsolidasi Organisasi",
+    description: "Melakukan audit aset fisik kantor DPC Banjarnegara, inventarisasi sekretariat, dan pemetaan demografis awal wilayah daerah pemilihan.",
+    completed: true,
+    completedAt: "2026-03-15T10:00:00.000Z",
+    completedBy: "Admin DPC (Super Admin)",
+    notes: "Seluruh berkas fisik dan digital inventarisasi aset DPC telah diverifikasi dan diarsipkan dengan aman di sekretariat."
+  },
+  {
+    id: "tw-2-2026",
+    title: "Musyawarah Anak Cabang (Musancab) & Pembentukan Ranting",
+    quarter: "TW II",
+    year: 2026,
+    phase: "Konsolidasi Organisasi",
+    description: "Penyelenggaraan konsolidasi tingkat kecamatan (Musancab) di 20 kecamatan se-Banjarnegara serta restrukturisasi ranting (tingkat desa).",
+    completed: false,
+    notes: "Sedang berjalan. Musancab untuk 14 kecamatan selesai, menyisakan 6 kecamatan di wilayah selatan Banjarnegara."
+  },
+  {
+    id: "tw-3-2026",
+    title: "Rekrutmen & Pembuatan KTA Baru (Target 5.000 Anggota)",
+    quarter: "TW III",
+    year: 2026,
+    phase: "Konsolidasi Organisasi",
+    description: "Gerakan masif pencetakan Karta Tanda Anggota (KTA) baru di tingkat desa dengan penugasan ke setiap pengurus ranting.",
+    completed: false
+  },
+  {
+    id: "tw-4-2026",
+    title: "Rapat Kerja Cabang (Rakercab) Penyusunan Strategi",
+    quarter: "TW IV",
+    year: 2026,
+    phase: "Konsolidasi Organisasi",
+    description: "Pertemuan akbar seluruh struktur DPC, PAC, Ranting, dan Sayap Partai Banjarnegara untuk meluncurkan Program Kerja 2027-2029.",
+    completed: false
+  },
+  {
+    id: "tw-1-2027",
+    title: "Sertifikasi Pemahaman Ideologi Digital Pengurus DPC",
+    quarter: "TW I",
+    year: 2027,
+    phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+    description: "Pelatihan literasi digital dan pemahaman ideologi kepartaian Marhaenisme bagi seluruh jajaran struktural DPC.",
+    completed: false
+  },
+  {
+    id: "tw-2-2027",
+    title: "Sekolah Kader Ideologi PAC (Politik & Marhaenisme)",
+    quarter: "TW II",
+    year: 2027,
+    phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+    description: "Penyelenggaraan sekolah kader tatap muka per daerah pemilihan untuk mendidik kader militan di tingkat PAC kecamatan.",
+    completed: false
+  },
+  {
+    id: "tw-3-2027",
+    title: "Pelatihan Guraklih (Guru Saksi & Penggerak Pemilih)",
+    quarter: "TW III",
+    year: 2027,
+    phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+    description: "Membentuk saksi-saksi tangguh yang militan dan penggerak pemilih untuk setiap TPS di Kabupaten Banjarnegara.",
+    completed: false
+  },
+  {
+    id: "tw-4-2027",
+    title: "Pembentukan Sayap Partai di Seluruh Kecamatan",
+    quarter: "TW IV",
+    year: 2027,
+    phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+    description: "Pembentukan pengurus lengkap untuk organisasi sayap (TMP, BAMUSI, REPDEM) untuk menyentuh pemilih milenial dan komunitas lokal.",
+    completed: false
+  },
+  {
+    id: "tw-1-2028",
+    title: "Peluncuran Program Gotong Royong Air Bersih & Jalan",
+    quarter: "TW I",
+    year: 2028,
+    phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+    description: "Realisasi gotong-royong pengadaan pipa air bersih dan perbaikan jalan lingkar dusun yang rusak di wilayah Banjarnegara selatan.",
+    completed: false
+  },
+  {
+    id: "tw-2-2028",
+    title: "Pencapaian Target 100% Advokasi KIP, PIP & BPJS",
+    quarter: "TW II",
+    year: 2028,
+    phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+    description: "Membantu warga kurang mampu untuk mendapatkan akses jaminan kesehatan PBI dan kelanjutan beasiswa pendidikan anak yatim piatu.",
+    completed: false
+  },
+  {
+    id: "tw-3-2028",
+    title: "Kampanye Door-to-Door (DDS) Awal & Peta TPS Potensial",
+    quarter: "TW III",
+    year: 2028,
+    phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+    description: "Memulai pelaporan kunjungan rumah ke rumah (DDS Tracker) untuk mengunci konstituen pemilih setia PDI Perjuangan.",
+    completed: false
+  },
+  {
+    id: "tw-4-2028",
+    title: "Rapat Koordinasi Fraksi DPRD & Rekomendasi Pembangunan",
+    quarter: "TW IV",
+    year: 2028,
+    phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+    description: "Penyusunan pandangan resmi Fraksi PDI Perjuangan DPRD Banjarnegara untuk dialokasikan pada APBD perubahan.",
+    completed: false
+  },
+  {
+    id: "tw-1-2029",
+    title: "Finalisasi DPT Wilayah & Verifikasi Jaringan TPS",
+    quarter: "TW I",
+    year: 2029,
+    phase: "Mobilisasi Total & Pemenangan Pemilu",
+    description: "Audit akhir data pemilih tetap (DPT) dan validasi personil saksi yang bertugas di 1,000+ TPS se-Banjarnegara.",
+    completed: false
+  },
+  {
+    id: "tw-2-2029",
+    title: "Mobilisasi Massa Terstruktur & Kampanye Akbar Serentak",
+    quarter: "TW II",
+    year: 2029,
+    phase: "Mobilisasi Total & Pemenangan Pemilu",
+    description: "Konsolidasi akbar pengerahan massa serentak secara tertib untuk memenangkan PDI Perjuangan Banjarnegara secara mutlak.",
+    completed: false
+  },
+  {
+    id: "tw-3-2029",
+    title: "Pembentukan Posko Pemenangan Gotong Royong Desa",
+    quarter: "TW III",
+    year: 2029,
+    phase: "Mobilisasi Total & Pemenangan Pemilu",
+    description: "Mendirikan posko taktis perjuangan sebagai pusat pemantauan suara dan penyebaran alat peraga kampanye di setiap desa.",
+    completed: false
+  },
+  {
+    id: "tw-4-2029",
+    title: "Kawal Suara Pemilu & Input Quick Count Real-Time",
+    quarter: "TW IV",
+    year: 2029,
+    phase: "Mobilisasi Total & Pemenangan Pemilu",
+    description: "Pengawalan ketat rekapitulasi form C.Hasil dari saksi TPS ke DPC dan pelaporan cepat data melalui fitur Quick Count.",
+    completed: false
+  }
+];

@@ -9,16 +9,17 @@ import SainteLagueCalculator from './components/SainteLagueCalculator';
 import KtaTracker from './components/KtaTracker';
 import DdsTracker from './components/DdsTracker';
 import AdvocacyManager from './components/AdvocacyManager';
+import StrategicTimeline from './components/StrategicTimeline';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
-import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping, DdsLog, AdvocacyTicket } from './types';
+import type { Member, LogisticsItem, LogisticsOrder, Aspiration, QuickCountResult, MemberReport, PrivateMessage, RantingProposal, OperationalFund, LogisticsStockHistory, PartyActivity, TpsMapping, DdsLog, AdvocacyTicket, Milestone } from './types';
 import { 
   BANJARNEGARA_REGIONS, KECAMATAN_COORDS, INITIAL_MEMBERS, 
   INITIAL_LOGISTICS, INITIAL_ORDERS, INITIAL_ASPIRATIONS, 
   QUIZ_QUESTIONS, INITIAL_QUICK_COUNT, INITIAL_REPORTS, INITIAL_MESSAGES,
   INITIAL_FUNDS, INITIAL_STOCK_HISTORY, INITIAL_ACTIVITIES, INITIAL_TPS_MAPPING,
-  INITIAL_DDS_LOGS, INITIAL_ADVOCACY_TICKETS
+  INITIAL_DDS_LOGS, INITIAL_ADVOCACY_TICKETS, INITIAL_MILESTONES
 } from './mockData';
 import { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LineChart, Line, PieChart, Pie } from 'recharts';
 
@@ -876,7 +877,7 @@ export default function App() {
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => {
     return window.innerWidth < 768;
   });
-  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast' | 'dds' | 'advokasi'>('beranda');
+  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast' | 'dds' | 'advokasi' | 'timeline'>('beranda');
 
   // Broadcast / Pengumuman State
   const [broadcasts, setBroadcasts] = useState<any[]>(() => {
@@ -914,7 +915,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta' | 'dds-tracker' | 'advokasi'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta' | 'dds-tracker' | 'advokasi' | 'timeline'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
@@ -991,7 +992,8 @@ export default function App() {
               dbActivities,
               dbTpsMapping,
               dbDdsLogs,
-              dbAdvocacy
+              dbAdvocacy,
+              dbMilestones
             ] = await Promise.all([
               fetch('/api/members').then(r => r.json()),
               fetch('/api/logistics').then(r => r.json()),
@@ -1007,7 +1009,8 @@ export default function App() {
               fetch('/api/activities').then(r => r.json()).catch(() => []),
               fetch('/api/tps-mapping').then(r => r.json()).catch(() => []),
               fetch('/api/dds-logs').then(r => r.json()).catch(() => []),
-              fetch('/api/advocacy-tickets').then(r => r.json()).catch(() => [])
+              fetch('/api/advocacy-tickets').then(r => r.json()).catch(() => []),
+              fetch('/api/milestones').then(r => r.json()).catch(() => [])
             ]);
 
             if (dbMembers) setMembers(dbMembers);
@@ -1025,6 +1028,7 @@ export default function App() {
             if (dbTpsMapping) setTpsData(dbTpsMapping);
             if (dbDdsLogs) setDdsLogs(dbDdsLogs);
             if (dbAdvocacy) setAdvocacyTickets(dbAdvocacy);
+            if (dbMilestones) setMilestones(dbMilestones);
           }
         }
       } catch (error) {
@@ -1208,6 +1212,32 @@ export default function App() {
     setAdvocacyTickets(prev => prev.filter(t => t.id !== id));
   };
 
+  // Milestones State & Handler
+  const [milestones, setMilestones] = useState<Milestone[]>(() => {
+    const saved = localStorage.getItem('pdip_milestones');
+    return saved ? JSON.parse(saved) : INITIAL_MILESTONES;
+  });
+
+  const handleUpdateMilestone = async (id: string, completed: boolean, notes?: string, completedBy?: string) => {
+    const completedAt = completed ? new Date().toISOString() : undefined;
+    setMilestones(prev => prev.map(m => m.id === id ? { ...m, completed, notes, completedBy, completedAt } : m));
+
+    if (isDbConnected) {
+      try {
+        const response = await fetch(`/api/milestones/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed, notes, completedBy, completedAt })
+        });
+        if (!response.ok) {
+          throw new Error('Gagal memperbarui milestone di server');
+        }
+      } catch (err) {
+        console.error('Database Sync Error:', err);
+      }
+    }
+  };
+
   // Activities Form & Modal States
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [showActivityReportModal, setShowActivityReportModal] = useState(false);
@@ -1293,6 +1323,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('pdip_advocacy_tickets', JSON.stringify(advocacyTickets));
   }, [advocacyTickets]);
+
+  useEffect(() => {
+    localStorage.setItem('pdip_milestones', JSON.stringify(milestones));
+  }, [milestones]);
 
   useEffect(() => {
     localStorage.setItem('pdip_broadcasts', JSON.stringify(broadcasts));
@@ -3385,6 +3419,16 @@ export default function App() {
               />
             </div>
           )}
+          {/* TAB 7: TIMELINE STRATEGIS */}
+          {mobileTab === 'timeline' && (
+            <div className="animate-fadeIn">
+              <StrategicTimeline 
+                milestones={milestones}
+                currentUser={currentUser}
+                onUpdateMilestone={handleUpdateMilestone}
+              />
+            </div>
+          )}
 
         </div>
 
@@ -3395,6 +3439,7 @@ export default function App() {
             { id: 'rekrut', label: 'Rekrut', icon: Plus },
             { id: 'dds', label: 'DDS Tracker', icon: MapPin },
             { id: 'advokasi', label: 'Advokasi', icon: HeartHandshake },
+            { id: 'timeline', label: 'Timeline', icon: Calendar },
             { id: 'lapor', label: 'Lapor', icon: Award },
             { id: 'pesan_broadcast', label: 'Pesan', icon: Mail, badge: totalUnreadMessages }
           ].map(tab => {
@@ -3469,6 +3514,7 @@ export default function App() {
               { id: 'tracker-kta', label: 'Tracker Target KTA', icon: Target },
               { id: 'dds-tracker', label: 'DDS Tracker (Campaign)', icon: MapPin },
               { id: 'advokasi', label: 'Advokasi Bantuan Sosial', icon: HeartHandshake },
+              { id: 'timeline', label: 'Timeline Strategis 26-29', icon: Calendar },
               { id: 'dpt', label: 'Daftar DPT Wilayah', icon: ListCollapse },
               { id: 'laporan', label: 'Laporan & Peristiwa', icon: Award },
               { id: 'perpesanan', label: 'Perpesanan Private', icon: Mail },
@@ -6073,6 +6119,15 @@ export default function App() {
             onAddTicket={handleAddAdvocacyTicket}
             onUpdateTicket={handleUpdateAdvocacyTicket}
             onDeleteTicket={handleDeleteAdvocacyTicket}
+          />
+        )}
+
+        {/* ==================== STRATEGIC MILESTONE TIMELINE VIEW ==================== */}
+        {activeTab === 'timeline' && (
+          <StrategicTimeline 
+            milestones={milestones}
+            currentUser={currentUser}
+            onUpdateMilestone={handleUpdateMilestone}
           />
         )}
 

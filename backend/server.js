@@ -110,6 +110,186 @@ const pool = mysql.createPool({
       console.log('Created advocacy_tickets table');
     }
 
+    // Check if milestones table exists, if not create it
+    const [milestoneTables] = await connection.query("SHOW TABLES LIKE 'milestones'");
+    if (milestoneTables.length === 0) {
+      await connection.query(`
+        CREATE TABLE milestones (
+          id VARCHAR(50) PRIMARY KEY,
+          title VARCHAR(200) NOT NULL,
+          quarter VARCHAR(20) NOT NULL,
+          year INT NOT NULL,
+          phase VARCHAR(100) NOT NULL,
+          description TEXT NOT NULL,
+          completed TINYINT(1) DEFAULT 0,
+          completed_at VARCHAR(50) NULL,
+          completed_by VARCHAR(100) NULL,
+          notes TEXT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log('Created milestones table');
+
+      const DEFAULT_MILESTONES = [
+        {
+          id: "tw-1-2026",
+          title: "Pendataan Aset & Pemetaan Wilayah DPC (Audit Awal)",
+          quarter: "TW I",
+          year: 2026,
+          phase: "Konsolidasi Organisasi",
+          description: "Melakukan audit aset fisik kantor DPC Banjarnegara, inventarisasi sekretariat, dan pemetaan demografis awal wilayah daerah pemilihan.",
+          completed: 1,
+          completed_at: "2026-03-15T10:00:00.000Z",
+          completed_by: "Admin DPC (Super Admin)",
+          notes: "Seluruh berkas fisik dan digital inventarisasi aset DPC telah diverifikasi dan diarsipkan dengan aman di sekretariat."
+        },
+        {
+          id: "tw-2-2026",
+          title: "Musyawarah Anak Cabang (Musancab) & Pembentukan Ranting",
+          quarter: "TW II",
+          year: 2026,
+          phase: "Konsolidasi Organisasi",
+          description: "Penyelenggaraan konsolidasi tingkat kecamatan (Musancab) di 20 kecamatan se-Banjarnegara serta restrukturisasi ranting (tingkat desa).",
+          completed: 0,
+          notes: "Sedang berjalan. Musancab untuk 14 kecamatan selesai, menyisakan 6 kecamatan di wilayah selatan Banjarnegara."
+        },
+        {
+          id: "tw-3-2026",
+          title: "Rekrutmen & Pembuatan KTA Baru (Target 5.000 Anggota)",
+          quarter: "TW III",
+          year: 2026,
+          phase: "Konsolidasi Organisasi",
+          description: "Gerakan masif pencetakan Karta Tanda Anggota (KTA) baru di tingkat desa dengan penugasan ke setiap pengurus ranting.",
+          completed: 0
+        },
+        {
+          id: "tw-4-2026",
+          title: "Rapat Kerja Cabang (Rakercab) Penyusunan Strategi",
+          quarter: "TW IV",
+          year: 2026,
+          phase: "Konsolidasi Organisasi",
+          description: "Pertemuan akbar seluruh struktur DPC, PAC, Ranting, dan Sayap Partai Banjarnegara untuk meluncurkan Program Kerja 2027-2029.",
+          completed: 0
+        },
+        {
+          id: "tw-1-2027",
+          title: "Sertifikasi Pemahaman Ideologi Digital Pengurus DPC",
+          quarter: "TW I",
+          year: 2027,
+          phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+          description: "Pelatihan literasi digital dan pemahaman ideologi kepartaian Marhaenisme bagi seluruh jajaran struktural DPC.",
+          completed: 0
+        },
+        {
+          id: "tw-2-2027",
+          title: "Sekolah Kader Ideologi PAC (Politik & Marhaenisme)",
+          quarter: "TW II",
+          year: 2027,
+          phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+          description: "Penyelenggaraan sekolah kader tatap muka per daerah pemilihan untuk mendidik kader militan di tingkat PAC kecamatan.",
+          completed: 0
+        },
+        {
+          id: "tw-3-2027",
+          title: "Pelatihan Guraklih (Guru Saksi & Penggerak Pemilih)",
+          quarter: "TW III",
+          year: 2027,
+          phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+          description: "Membentuk saksi-saksi tangguh yang militan dan penggerak pemilih untuk setiap TPS di Kabupaten Banjarnegara.",
+          completed: 0
+        },
+        {
+          id: "tw-4-2027",
+          title: "Pembentukan Sayap Partai di Seluruh Kecamatan",
+          quarter: "TW IV",
+          year: 2027,
+          phase: "Pendidikan & Pengkaderan (Kaderisasi)",
+          description: "Pembentukan pengurus lengkap untuk organisasi sayap (TMP, BAMUSI, REPDEM) untuk menyentuh pemilih milenial dan komunitas lokal.",
+          completed: 0
+        },
+        {
+          id: "tw-1-2028",
+          title: "Peluncuran Program Gotong Royong Air Bersih & Jalan",
+          quarter: "TW I",
+          year: 2028,
+          phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+          description: "Realisasi gotong-royong pengadaan pipa air bersih dan perbaikan jalan lingkar dusun yang rusak di wilayah Banjarnegara selatan.",
+          completed: 0
+        },
+        {
+          id: "tw-2-2028",
+          title: "Pencapaian Target 100% Advokasi KIP, PIP & BPJS",
+          quarter: "TW II",
+          year: 2028,
+          phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+          description: "Membantu warga kurang mampu untuk mendapatkan akses jaminan kesehatan PBI dan kelanjutan beasiswa pendidikan anak yatim piatu.",
+          completed: 0
+        },
+        {
+          id: "tw-3-2028",
+          title: "Kampanye Door-to-Door (DDS) Awal & Peta TPS Potensial",
+          quarter: "TW III",
+          year: 2028,
+          phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+          description: "Memulai pelaporan kunjungan rumah ke rumah (DDS Tracker) untuk mengunci konstituen pemilih setia PDI Perjuangan.",
+          completed: 0
+        },
+        {
+          id: "tw-4-2028",
+          title: "Rapat Koordinasi Fraksi DPRD & Rekomendasi Pembangunan",
+          quarter: "TW IV",
+          year: 2028,
+          phase: "Pendampingan & Kerja Nyata (Advokasi Rakyat)",
+          description: "Penyusunan pandangan resmi Fraksi PDI Perjuangan DPRD Banjarnegara untuk dialokasikan pada APBD perubahan.",
+          completed: 0
+        },
+        {
+          id: "tw-1-2029",
+          title: "Finalisasi DPT Wilayah & Verifikasi Jaringan TPS",
+          quarter: "TW I",
+          year: 2029,
+          phase: "Mobilisasi Total & Pemenangan Pemilu",
+          description: "Audit akhir data pemilih tetap (DPT) dan validasi personil saksi yang bertugas di 1,000+ TPS se-Banjarnegara.",
+          completed: 0
+        },
+        {
+          id: "tw-2-2029",
+          title: "Mobilisasi Massa Terstruktur & Kampanye Akbar Serentak",
+          quarter: "TW II",
+          year: 2029,
+          phase: "Mobilisasi Total & Pemenangan Pemilu",
+          description: "Konsolidasi akbar pengerahan massa serentak secara tertib untuk memenangkan PDI Perjuangan Banjarnegara secara mutlak.",
+          completed: 0
+        },
+        {
+          id: "tw-3-2029",
+          title: "Pembentukan Posko Pemenangan Gotong Royong Desa",
+          quarter: "TW III",
+          year: 2029,
+          phase: "Mobilisasi Total & Pemenangan Pemilu",
+          description: "Mendirikan posko taktis perjuangan sebagai pusat pemantauan suara dan penyebaran alat peraga kampanye di setiap desa.",
+          completed: 0
+        },
+        {
+          id: "tw-4-2029",
+          title: "Kawal Suara Pemilu & Input Quick Count Real-Time",
+          quarter: "TW IV",
+          year: 2029,
+          phase: "Mobilisasi Total & Pemenangan Pemilu",
+          description: "Pengawalan ketat rekapitulasi form C.Hasil dari saksi TPS ke DPC dan pelaporan cepat data melalui fitur Quick Count.",
+          completed: 0
+        }
+      ];
+
+      for (const m of DEFAULT_MILESTONES) {
+        await connection.query(
+          `INSERT INTO milestones (id, title, quarter, year, phase, description, completed, completed_at, completed_by, notes) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [m.id, m.title, m.quarter, m.year, m.phase, m.description, m.completed, m.completed_at || null, m.completed_by || null, m.notes || null]
+        );
+      }
+      console.log('Seeded milestones table');
+    }
+
     connection.release();
   } catch (err) {
     console.error('Migration failed or DB offline:', err.message);
@@ -1497,6 +1677,43 @@ app.delete('/api/advocacy-tickets/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM advocacy_tickets WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== 16. STRATEGIC TIMELINE MILESTONE ROUTES ====================
+
+app.get('/api/milestones', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM milestones ORDER BY year ASC, id ASC');
+    const milestones = rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      quarter: r.quarter,
+      year: r.year,
+      phase: r.phase,
+      description: r.description,
+      completed: r.completed === 1,
+      completedAt: r.completed_at,
+      completedBy: r.completed_by,
+      notes: r.notes
+    }));
+    res.json(milestones);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/milestones/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { completed, completedBy, completedAt, notes } = req.body;
+    await pool.query(
+      `UPDATE milestones SET completed = ?, completed_by = ?, completed_at = ?, notes = ? WHERE id = ?`,
+      [completed ? 1 : 0, completedBy || null, completedAt || null, notes || null, id]
+    );
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
