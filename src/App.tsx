@@ -10,6 +10,8 @@ import KtaTracker from './components/KtaTracker';
 import DdsTracker from './components/DdsTracker';
 import AdvocacyManager from './components/AdvocacyManager';
 import StrategicTimeline from './components/StrategicTimeline';
+import WitnessManager from './components/WitnessManager';
+import OrgChartComponent from './components/OrgChartComponent';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
@@ -877,7 +879,7 @@ export default function App() {
   const [isMobileDevice, setIsMobileDevice] = useState<boolean>(() => {
     return window.innerWidth < 768;
   });
-  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast' | 'dds' | 'advokasi' | 'timeline'>('beranda');
+  const [mobileTab, setMobileTab] = useState<'beranda' | 'rekrut' | 'lapor' | 'pesan_broadcast' | 'dds' | 'advokasi' | 'timeline' | 'saksi'>('beranda');
 
   // Broadcast / Pengumuman State
   const [broadcasts, setBroadcasts] = useState<any[]>(() => {
@@ -915,11 +917,10 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta' | 'dds-tracker' | 'advokasi' | 'timeline'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague' | 'tracker-kta' | 'dds-tracker' | 'advokasi' | 'timeline' | 'saksi'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
-  const [treePage, setTreePage] = useState<number>(1);
   const [listPage, setListPage] = useState<number>(1);
 
   // MySQL Database connectivity state
@@ -1493,8 +1494,90 @@ export default function App() {
   // Leaflet Map Center State
   const [mapCenter, setMapCenter] = useState<[number, number]>([-7.3996, 109.6976]);
   const [gisMode, setGisMode] = useState<'kader' | 'tps'>('kader');
-  const [tpsData, setTpsData] = useState<TpsMapping[]>(INITIAL_TPS_MAPPING);
+  const [tpsData, setTpsData] = useState<TpsMapping[]>(() => {
+    const saved = localStorage.getItem('pdip_tps_data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as TpsMapping[];
+        if (parsed.length < 20) {
+          return INITIAL_TPS_MAPPING;
+        }
+        return parsed.map(t => {
+          if (t.kecamatan === 'Banjarnegara' && t.desa === 'Krangandipan') {
+            return { ...t, desa: 'Krandegan' };
+          }
+          if (t.kecamatan === 'Banjarnegara' && t.desa === 'Semampir') {
+            return { ...t, desa: 'Semarang' };
+          }
+          return t;
+        });
+      } catch (e) {
+        return INITIAL_TPS_MAPPING;
+      }
+    }
+    return INITIAL_TPS_MAPPING;
+  });
   const [tpsSearch, setTpsSearch] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('pdip_tps_data', JSON.stringify(tpsData));
+  }, [tpsData]);
+
+  const handleUpdateWitness = async (
+    tpsId: string,
+    slot: 1 | 2,
+    witnessId: string | null,
+    witnessName: string | null,
+    witnessStatus?: 'belum_pelatihan' | 'terlatih'
+  ) => {
+    setTpsData(prev => prev.map(t => {
+      if (t.id === tpsId) {
+        const updated = { ...t };
+        if (slot === 1) {
+          updated.saksi1Id = witnessId;
+          updated.saksi1Name = witnessName;
+          if (witnessStatus !== undefined) updated.saksi1Status = witnessStatus;
+        } else {
+          updated.saksi2Id = witnessId;
+          updated.saksi2Name = witnessName;
+          if (witnessStatus !== undefined) updated.saksi2Status = witnessStatus;
+        }
+        updated.lastUpdatedBy = currentUser.name;
+        updated.lastUpdatedDate = new Date().toISOString().slice(0, 10);
+        return updated;
+      }
+      return t;
+    }));
+
+    if (isDbConnected) {
+      try {
+        const payload: any = {
+          lastUpdatedBy: currentUser.name,
+          lastUpdatedDate: new Date().toISOString().slice(0, 10)
+        };
+        if (slot === 1) {
+          payload.saksi1Id = witnessId;
+          payload.saksi1Name = witnessName;
+          if (witnessStatus !== undefined) payload.saksi1Status = witnessStatus;
+        } else {
+          payload.saksi2Id = witnessId;
+          payload.saksi2Name = witnessName;
+          if (witnessStatus !== undefined) payload.saksi2Status = witnessStatus;
+        }
+
+        const res = await fetch(`/api/tps-mapping/${tpsId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          throw new Error('Gagal melakukan pembaruan penugasan saksi di server');
+        }
+      } catch (err) {
+        console.error('MySQL database sync error:', err);
+      }
+    }
+  };
 
   const filteredTpsData = tpsData.filter(t => 
     t.namaTps.toLowerCase().includes(tpsSearch.toLowerCase()) ||
@@ -3419,6 +3502,17 @@ export default function App() {
               />
             </div>
           )}
+          {/* TAB: SAKSI TPS */}
+          {mobileTab === 'saksi' && (
+            <div className="animate-fadeIn">
+              <WitnessManager 
+                tpsList={tpsData}
+                members={members}
+                currentUser={currentUser}
+                onUpdateWitness={handleUpdateWitness}
+              />
+            </div>
+          )}
           {/* TAB 7: TIMELINE STRATEGIS */}
           {mobileTab === 'timeline' && (
             <div className="animate-fadeIn">
@@ -3439,6 +3533,7 @@ export default function App() {
             { id: 'rekrut', label: 'Rekrut', icon: Plus },
             { id: 'dds', label: 'DDS Tracker', icon: MapPin },
             { id: 'advokasi', label: 'Advokasi', icon: HeartHandshake },
+            { id: 'saksi', label: 'Saksi TPS', icon: Users },
             { id: 'timeline', label: 'Timeline', icon: Calendar },
             { id: 'lapor', label: 'Lapor', icon: Award },
             { id: 'pesan_broadcast', label: 'Pesan', icon: Mail, badge: totalUnreadMessages }
@@ -3512,6 +3607,7 @@ export default function App() {
               { id: 'dashboard', label: 'Dasbor Peran', icon: Shield },
               { id: 'keanggotaan', label: 'Struktur & Downline', icon: Users },
               { id: 'tracker-kta', label: 'Tracker Target KTA', icon: Target },
+              { id: 'saksi', label: 'Penempatan Saksi 100%', icon: Users },
               { id: 'dds-tracker', label: 'DDS Tracker (Campaign)', icon: MapPin },
               { id: 'advokasi', label: 'Advokasi Bantuan Sosial', icon: HeartHandshake },
               { id: 'timeline', label: 'Timeline Strategis 26-29', icon: Calendar },
@@ -3888,7 +3984,6 @@ export default function App() {
                   <button
                     onClick={() => {
                       setMemberViewMode('tree');
-                      setTreePage(1);
                     }}
                     className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
                       memberViewMode === 'tree' ? 'bg-pdip-red text-white' : 'text-gray-400 hover:text-white'
@@ -3909,57 +4004,14 @@ export default function App() {
 
             {/* Tree View (Bagan Anggota) */}
             {memberViewMode === 'tree' ? (
-              <div className="bg-pdip-metal p-6 rounded-xl border border-red-950/20 shadow-md space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-300 border-b border-red-950/20 pb-3 flex items-center gap-2">
-                  <GitFork size={16} className="text-pdip-red" /> Bagan Alur Cabang Perekrutan (Kaderisasi Turun)
-                </h3>
-                <div className="p-4 bg-pdip-black/30 rounded-xl overflow-x-auto min-h-[400px]">
-                  {currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' ? (
-                    (() => {
-                      const rootMembers = members.filter(m => !m.parentId);
-                      const rootItemsPerPage = 5;
-                      const totalRootPages = Math.ceil(rootMembers.length / rootItemsPerPage) || 1;
-                      const activeTreePage = Math.min(treePage, totalRootPages);
-                      const paginatedRootMembers = rootMembers.slice(
-                        (activeTreePage - 1) * rootItemsPerPage,
-                        activeTreePage * rootItemsPerPage
-                      );
-                      return (
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            {paginatedRootMembers.map(rootMember => (
-                              <MemberTreeNodeComponent key={rootMember.id} member={rootMember} />
-                            ))}
-                          </div>
-                          {totalRootPages > 1 && (
-                            <div className="flex items-center justify-between mt-6 border-t border-red-950/20 pt-4">
-                              <button
-                                disabled={activeTreePage === 1}
-                                onClick={() => setTreePage(prev => Math.max(prev - 1, 1))}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-pdip-darkgray border border-red-900/20 text-gray-400 hover:text-white disabled:opacity-50 disabled:pointer-events-none transition flex items-center gap-1"
-                              >
-                                Sebelumnya
-                              </button>
-                              <span className="text-xs text-gray-400 font-medium font-mono">
-                                Halaman {activeTreePage} dari {totalRootPages} ({rootMembers.length} Root)
-                              </span>
-                              <button
-                                disabled={activeTreePage === totalRootPages}
-                                onClick={() => setTreePage(prev => Math.min(prev + 1, totalRootPages))}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-pdip-darkgray border border-red-900/20 text-gray-400 hover:text-white disabled:opacity-50 disabled:pointer-events-none transition flex items-center gap-1"
-                              >
-                                Berikutnya
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()
-                  ) : (
-                    <MemberTreeNodeComponent member={currentUser} />
-                  )}
-                </div>
-              </div>
+              <OrgChartComponent 
+                members={members}
+                tpsList={tpsData}
+                onAddMember={() => setShowAddMemberModal(true)}
+                onAssignWitness={() => {
+                  setActiveTab('saksi');
+                }}
+              />
             ) : (
               // List View (Daftar Tabel)
               <>
@@ -6128,6 +6180,16 @@ export default function App() {
             milestones={milestones}
             currentUser={currentUser}
             onUpdateMilestone={handleUpdateMilestone}
+          />
+        )}
+
+        {/* ==================== SAKSI & PENGAWALAN TPS VIEW ==================== */}
+        {activeTab === 'saksi' && (
+          <WitnessManager 
+            tpsList={tpsData}
+            members={members}
+            currentUser={currentUser}
+            onUpdateWitness={handleUpdateWitness}
           />
         )}
 

@@ -3338,102 +3338,85 @@ export const INITIAL_ACTIVITIES: PartyActivity[] = [
 ];
 
 export const INITIAL_TPS_MAPPING: TpsMapping[] = [
-  {
-    id: "tps-bna-1",
-    namaTps: "TPS 01 Banjarnegara",
-    kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
-    lat: -7.3996,
-    lng: 109.6976,
-    zona: 'merah',
-    dptCount: 250,
-    lastUpdatedBy: "Admin DPC",
-    lastUpdatedDate: "2026-06-02"
-  },
-  {
-    id: "tps-bna-2",
-    namaTps: "TPS 02 Banjarnegara",
-    kecamatan: "Banjarnegara",
-    desa: "Semampir",
-    lat: -7.4020,
-    lng: 109.6900,
-    zona: 'kuning',
-    dptCount: 220,
-    lastUpdatedBy: "Korcam BNA",
-    lastUpdatedDate: "2026-06-01"
-  },
-  {
-    id: "tps-bawang-1",
-    namaTps: "TPS 01 Bawang",
-    kecamatan: "Bawang",
-    desa: "Mantrianom",
-    lat: -7.4110,
-    lng: 109.6600,
-    zona: 'hijau',
-    dptCount: 190,
-    lastUpdatedBy: "Admin DPC",
-    lastUpdatedDate: "2026-05-30"
-  },
-  {
-    id: "tps-bawang-2",
-    namaTps: "TPS 02 Bawang",
-    kecamatan: "Bawang",
-    desa: "Bawang",
-    lat: -7.4200,
-    lng: 109.6550,
-    zona: 'merah',
-    dptCount: 280,
-    lastUpdatedBy: "Ketua PAC Bawang",
-    lastUpdatedDate: "2026-06-01"
-  },
-  {
-    id: "tps-puj-1",
-    namaTps: "TPS 01 Punggelan",
-    kecamatan: "Punggelan",
-    desa: "Punggelan",
-    lat: -7.3195,
-    lng: 109.5841,
-    zona: 'kuning',
-    dptCount: 210,
-    lastUpdatedBy: "Admin DPC",
-    lastUpdatedDate: "2026-05-28"
-  },
-  {
-    id: "tps-puj-2",
-    namaTps: "TPS 02 Punggelan",
-    kecamatan: "Punggelan",
-    desa: "Tanjungtirta",
-    lat: -7.3210,
-    lng: 109.5800,
-    zona: 'merah',
-    dptCount: 245,
-    lastUpdatedBy: "Admin DPC",
-    lastUpdatedDate: "2026-06-02"
-  },
-  {
-    id: "tps-md-1",
-    namaTps: "TPS 01 Madukara",
-    kecamatan: "Madukara",
-    desa: "Madukara",
-    lat: -7.3689,
-    lng: 109.7289,
-    zona: 'hijau',
-    dptCount: 200,
-    lastUpdatedBy: "Korcam Madukara",
-    lastUpdatedDate: "2026-06-02"
-  },
-  {
-    id: "tps-md-2",
-    namaTps: "TPS 02 Madukara",
-    kecamatan: "Madukara",
-    desa: "Clapar",
-    lat: -7.3700,
-    lng: 109.7350,
-    zona: 'kuning',
-    dptCount: 175,
-    lastUpdatedBy: "Admin DPC",
-    lastUpdatedDate: "2026-05-29"
-  }
+  // 1. Banjarnegara
+  { id: "tps-bna-1", namaTps: "TPS 01 Banjarnegara", kecamatan: "Banjarnegara", desa: "Krandegan", lat: -7.3996, lng: 109.6976, zona: 'merah', dptCount: 250, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: "m-4", saksi1Name: "Sri Rahayu", saksi1Status: "terlatih", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-bna-2", namaTps: "TPS 02 Banjarnegara", kecamatan: "Banjarnegara", desa: "Semarang", lat: -7.4020, lng: 109.6900, zona: 'kuning', dptCount: 220, lastUpdatedBy: "Korcam BNA", lastUpdatedDate: "2026-06-01", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 2. Banjarmangu
+  { id: "tps-bjm-1", namaTps: "TPS 01 Banjarmangu", kecamatan: "Banjarmangu", desa: "Banjarmangu", lat: -7.3481, lng: 109.6841, zona: 'hijau', dptCount: 215, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-bjm-2", namaTps: "TPS 02 Banjarmangu", kecamatan: "Banjarmangu", desa: "Kesenet", lat: -7.3495, lng: 109.6820, zona: 'merah', dptCount: 240, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 3. Batur
+  { id: "tps-btr-1", namaTps: "TPS 01 Batur", kecamatan: "Batur", desa: "Batur", lat: -7.2144, lng: 109.7788, zona: 'kuning', dptCount: 198, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-btr-2", namaTps: "TPS 02 Batur", kecamatan: "Batur", desa: "Dieng Kulon", lat: -7.2160, lng: 109.7810, zona: 'merah', dptCount: 265, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 4. Bawang
+  { id: "tps-bwg-1", namaTps: "TPS 01 Bawang", kecamatan: "Bawang", desa: "Mantrianom", lat: -7.4101, lng: 109.6387, zona: 'hijau', dptCount: 190, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-05-30", saksi1Id: "m-4", saksi1Name: "Sri Rahayu", saksi1Status: "terlatih", saksi2Id: "m-3", saksi2Name: "Budi Santoso", saksi2Status: "terlatih" },
+  { id: "tps-bwg-2", namaTps: "TPS 02 Bawang", kecamatan: "Bawang", desa: "Bawang", lat: -7.4120, lng: 109.6350, zona: 'merah', dptCount: 280, lastUpdatedBy: "Ketua PAC Bawang", lastUpdatedDate: "2026-06-01", saksi1Id: "m-3", saksi1Name: "Budi Santoso", saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 5. Kalibening
+  { id: "tps-klb-1", namaTps: "TPS 01 Kalibening", kecamatan: "Kalibening", desa: "Kalibening", lat: -7.2474, lng: 109.6412, zona: 'kuning', dptCount: 210, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-klb-2", namaTps: "TPS 02 Kalibening", kecamatan: "Kalibening", desa: "Bedana", lat: -7.2490, lng: 109.6390, zona: 'hijau', dptCount: 185, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 6. Karangkobar
+  { id: "tps-kkb-1", namaTps: "TPS 01 Karangkobar", kecamatan: "Karangkobar", desa: "Karangkobar", lat: -7.2844, lng: 109.6988, zona: 'merah', dptCount: 235, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-kkb-2", namaTps: "TPS 02 Karangkobar", kecamatan: "Karangkobar", desa: "Leksana", lat: -7.2860, lng: 109.6960, zona: 'kuning', dptCount: 205, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 7. Madukara
+  { id: "tps-md-1", namaTps: "TPS 01 Madukara", kecamatan: "Madukara", desa: "Madukara", lat: -7.3689, lng: 109.7289, zona: 'hijau', dptCount: 200, lastUpdatedBy: "Korcam Madukara", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-md-2", namaTps: "TPS 02 Madukara", kecamatan: "Madukara", desa: "Clapar", lat: -7.3700, lng: 109.7350, zona: 'kuning', dptCount: 175, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-05-29", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 8. Mandiraja
+  { id: "tps-mdr-1", namaTps: "TPS 01 Mandiraja", kecamatan: "Mandiraja", desa: "Mandiraja Kulon", lat: -7.4712, lng: 109.5122, zona: 'merah', dptCount: 290, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-mdr-2", namaTps: "TPS 02 Mandiraja", kecamatan: "Mandiraja", desa: "Mandiraja Wetan", lat: -7.4730, lng: 109.5100, zona: 'hijau', dptCount: 230, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 9. Pagentan
+  { id: "tps-pgt-1", namaTps: "TPS 01 Pagentan", kecamatan: "Pagentan", desa: "Pagentan", lat: -7.2995, lng: 109.7699, zona: 'kuning', dptCount: 195, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pgt-2", namaTps: "TPS 02 Pagentan", kecamatan: "Pagentan", desa: "Plorengan", lat: -7.3010, lng: 109.7670, zona: 'merah', dptCount: 225, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 10. Pagedongan
+  { id: "tps-pgd-1", namaTps: "TPS 01 Pagedongan", kecamatan: "Pagedongan", desa: "Pagedongan", lat: -7.4523, lng: 109.7022, zona: 'hijau', dptCount: 212, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pgd-2", namaTps: "TPS 02 Pagedongan", kecamatan: "Pagedongan", desa: "Kebutuh Jurang", lat: -7.4540, lng: 109.7000, zona: 'merah', dptCount: 248, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 11. Pandanarum
+  { id: "tps-pda-1", namaTps: "TPS 01 Pandanarum", kecamatan: "Pandanarum", desa: "Pandanarum", lat: -7.2341, lng: 109.5989, zona: 'kuning', dptCount: 180, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pda-2", namaTps: "TPS 02 Pandanarum", kecamatan: "Pandanarum", desa: "Sinduaji", lat: -7.2360, lng: 109.5960, zona: 'hijau', dptCount: 165, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 12. Pejawaran
+  { id: "tps-pjw-1", namaTps: "TPS 01 Pejawaran", kecamatan: "Pejawaran", desa: "Pejawaran", lat: -7.2589, lng: 109.7612, zona: 'merah', dptCount: 220, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pjw-2", namaTps: "TPS 02 Pejawaran", kecamatan: "Pejawaran", desa: "Penusupan", lat: -7.2600, lng: 109.7590, zona: 'kuning', dptCount: 190, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 13. Punggelan
+  { id: "tps-pjl-1", namaTps: "TPS 01 Punggelan", kecamatan: "Punggelan", desa: "Punggelan", lat: -7.3195, lng: 109.5841, zona: 'kuning', dptCount: 210, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-05-28", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pjl-2", namaTps: "TPS 02 Punggelan", kecamatan: "Punggelan", desa: "Tanjungtirta", lat: -7.3210, lng: 109.5800, zona: 'merah', dptCount: 245, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 14. Purwanegara
+  { id: "tps-pwn-1", namaTps: "TPS 01 Purwanegara", kecamatan: "Purwanegara", desa: "Purwanegara", lat: -7.4254, lng: 109.6052, zona: 'hijau', dptCount: 275, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pwn-2", namaTps: "TPS 02 Purwanegara", kecamatan: "Purwanegara", desa: "Pucungbedug", lat: -7.4270, lng: 109.6000, zona: 'merah', dptCount: 295, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 15. Purwareja Klampok
+  { id: "tps-pwk-1", namaTps: "TPS 01 Klampok", kecamatan: "Purwareja Klampok", desa: "Klampok", lat: -7.4589, lng: 109.4385, zona: 'kuning', dptCount: 260, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-pwk-2", namaTps: "TPS 02 Klampok", kecamatan: "Purwareja Klampok", desa: "Purwareja", lat: -7.4600, lng: 109.4350, zona: 'hijau', dptCount: 220, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 16. Rakit
+  { id: "tps-rkt-1", namaTps: "TPS 01 Rakit", kecamatan: "Rakit", desa: "Rakit", lat: -7.3981, lng: 109.5312, zona: 'merah', dptCount: 240, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-rkt-2", namaTps: "TPS 02 Rakit", kecamatan: "Rakit", desa: "Adipasir", lat: -7.4000, lng: 109.5290, zona: 'kuning', dptCount: 215, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 17. Sigaluh
+  { id: "tps-sgl-1", namaTps: "TPS 01 Sigaluh", kecamatan: "Sigaluh", desa: "Sigaluh", lat: -7.3951, lng: 109.7745, zona: 'hijau', dptCount: 190, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-sgl-2", namaTps: "TPS 02 Sigaluh", kecamatan: "Sigaluh", desa: "Gombong", lat: -7.3970, lng: 109.7720, zona: 'merah', dptCount: 230, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 18. Susukan
+  { id: "tps-ssk-1", namaTps: "TPS 01 Susukan", kecamatan: "Susukan", desa: "Susukan", lat: -7.4912, lng: 109.4388, zona: 'kuning', dptCount: 205, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-ssk-2", namaTps: "TPS 02 Susukan", kecamatan: "Susukan", desa: "Gumelem Kulon", lat: -7.4930, lng: 109.4350, zona: 'hijau', dptCount: 250, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 19. Wanadadi
+  { id: "tps-wnd-1", namaTps: "TPS 01 Wanadadi", kecamatan: "Wanadadi", desa: "Wanadadi", lat: -7.3688, lng: 109.6151, zona: 'merah', dptCount: 242, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-wnd-2", namaTps: "TPS 02 Wanadadi", kecamatan: "Wanadadi", desa: "Tapen", lat: -7.3700, lng: 109.6120, zona: 'kuning', dptCount: 218, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+
+  // 20. Wanayasa
+  { id: "tps-wny-1", namaTps: "TPS 01 Wanayasa", kecamatan: "Wanayasa", desa: "Wanayasa", lat: -7.2512, lng: 109.7189, zona: 'hijau', dptCount: 185, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" },
+  { id: "tps-wny-2", namaTps: "TPS 02 Wanayasa", kecamatan: "Wanayasa", desa: "Tempuran", lat: -7.2530, lng: 109.7150, zona: 'merah', dptCount: 210, lastUpdatedBy: "Admin DPC", lastUpdatedDate: "2026-06-02", saksi1Id: null, saksi1Name: null, saksi1Status: "belum_pelatihan", saksi2Id: null, saksi2Name: null, saksi2Status: "belum_pelatihan" }
 ];
 
 export const INITIAL_DDS_LOGS: DdsLog[] = [
@@ -3442,7 +3425,7 @@ export const INITIAL_DDS_LOGS: DdsLog[] = [
     kaderId: "member-3", // Budi Santoso
     kaderName: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     residentName: "Bapak Maryono",
     phone: "081234567890",
     notes: "Keluarga Bapak Maryono membutuhkan bantuan bibit padi unggul. Sangat respek dengan PDI-P.",
@@ -3456,7 +3439,7 @@ export const INITIAL_DDS_LOGS: DdsLog[] = [
     kaderId: "member-3", // Budi Santoso
     kaderName: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     residentName: "Ibu Sumarni",
     phone: "081398765432",
     notes: "Ibu Sumarni menyampaikan aspirasi perbaikan selokan jalan desa. Sudah ber-KTA.",
@@ -3470,7 +3453,7 @@ export const INITIAL_DDS_LOGS: DdsLog[] = [
     kaderId: "member-3", // Budi Santoso
     kaderName: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     residentName: "Bapak Slamet",
     phone: "085600112233",
     notes: "Sosialisasi program kartu tani PDIP. Respon warga sangat positif dan antusias.",
@@ -3636,7 +3619,7 @@ export const INITIAL_ADVOCACY_TICKETS: any[] = [
     kaderId: "member-3",
     kaderName: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     photoUrl: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80",
     createdAt: "2026-06-02T12:30:00.000Z",
     dewanNotes: "Usulan beasiswa PIP sudah diverifikasi oleh tim Fraksi dan saat ini berkas sedang dikoordinasikan dengan Dinas Pendidikan Kabupaten Banjarnegara untuk dicairkan pada termin berikutnya.",

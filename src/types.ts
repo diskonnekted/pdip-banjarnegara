@@ -162,6 +162,12 @@ export interface TpsMapping {
   dptCount: number;
   lastUpdatedBy: string;
   lastUpdatedDate: string;
+  saksi1Id?: string | null;
+  saksi1Name?: string | null;
+  saksi1Status?: 'belum_pelatihan' | 'terlatih';
+  saksi2Id?: string | null;
+  saksi2Name?: string | null;
+  saksi2Status?: 'belum_pelatihan' | 'terlatih';
 }
 
 export interface DdsLog {

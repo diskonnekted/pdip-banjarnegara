@@ -62,6 +62,39 @@ const pool = mysql.createPool({
       console.log('Created tps_mapping table');
     }
 
+    // Ensure witness columns exist in tps_mapping table
+    const [tpsColumns] = await connection.query('SHOW COLUMNS FROM tps_mapping');
+    const tpsColumnNames = tpsColumns.map(c => c.Field);
+    
+    if (!tpsColumnNames.includes('saksi1_id')) {
+      await connection.query("ALTER TABLE tps_mapping ADD COLUMN saksi1_id VARCHAR(50) NULL");
+      console.log('Added column saksi1_id to tps_mapping');
+    }
+    if (!tpsColumnNames.includes('saksi1_name')) {
+      await connection.query("ALTER TABLE tps_mapping ADD COLUMN saksi1_name VARCHAR(100) NULL");
+      console.log('Added column saksi1_name to tps_mapping');
+    }
+    if (!tpsColumnNames.includes('saksi1_status')) {
+      await connection.query("ALTER TABLE tps_mapping ADD COLUMN saksi1_status VARCHAR(30) DEFAULT 'belum_pelatihan'");
+      console.log('Added column saksi1_status to tps_mapping');
+    }
+    if (!tpsColumnNames.includes('saksi2_id')) {
+      await connection.query("ALTER TABLE tps_mapping ADD COLUMN saksi2_id VARCHAR(50) NULL");
+      console.log('Added column saksi2_id to tps_mapping');
+    }
+    if (!tpsColumnNames.includes('saksi2_name')) {
+      await connection.query("ALTER TABLE tps_mapping ADD COLUMN saksi2_name VARCHAR(100) NULL");
+      console.log('Added column saksi2_name to tps_mapping');
+    }
+    if (!tpsColumnNames.includes('saksi2_status')) {
+      await connection.query("ALTER TABLE tps_mapping ADD COLUMN saksi2_status VARCHAR(30) DEFAULT 'belum_pelatihan'");
+      console.log('Added column saksi2_status to tps_mapping');
+    }
+
+    // Auto-migrate old dummy data typos to correct regions
+    await connection.query("UPDATE tps_mapping SET desa = 'Krandegan' WHERE kecamatan = 'Banjarnegara' AND desa = 'Krangandipan'");
+    await connection.query("UPDATE tps_mapping SET desa = 'Semarang' WHERE kecamatan = 'Banjarnegara' AND desa = 'Semampir'");
+
     // Check if dds_logs table exists, if not create it
     const [ddsTables] = await connection.query("SHOW TABLES LIKE 'dds_logs'");
     if (ddsTables.length === 0) {
@@ -1217,14 +1250,14 @@ app.delete('/api/activities/:id', async (req, res) => {
 // ==================== 13. TPS MAPPING ROUTE ====================
 
 const DEFAULT_TPS_MAPPING = [
-  { id: "tps-bna-1", nama_tps: "TPS 01 Banjarnegara", kecamatan: "Banjarnegara", desa: "Krangandipan", lat: -7.3996, lng: 109.6976, zona: "merah", dpt_count: 250, last_updated_by: "Admin DPC", last_updated_date: "2026-06-02" },
-  { id: "tps-bna-2", nama_tps: "TPS 02 Banjarnegara", kecamatan: "Banjarnegara", desa: "Semampir", lat: -7.4020, lng: 109.6900, zona: "kuning", dpt_count: 220, last_updated_by: "Korcam BNA", last_updated_date: "2026-06-01" },
-  { id: "tps-bawang-1", nama_tps: "TPS 01 Bawang", kecamatan: "Bawang", desa: "Mantrianom", lat: -7.4110, lng: 109.6600, zona: "hijau", dpt_count: 190, last_updated_by: "Admin DPC", last_updated_date: "2026-05-30" },
-  { id: "tps-bawang-2", nama_tps: "TPS 02 Bawang", kecamatan: "Bawang", desa: "Bawang", lat: -7.4200, lng: 109.6550, zona: "merah", dpt_count: 280, last_updated_by: "Ketua PAC Bawang", last_updated_date: "2026-06-01" },
-  { id: "tps-puj-1", nama_tps: "TPS 01 Punggelan", kecamatan: "Punggelan", desa: "Punggelan", lat: -7.3195, lng: 109.5841, zona: "kuning", dpt_count: 210, last_updated_by: "Admin DPC", last_updated_date: "2026-05-28" },
-  { id: "tps-puj-2", nama_tps: "TPS 02 Punggelan", kecamatan: "Punggelan", desa: "Tanjungtirta", lat: -7.3210, lng: 109.5800, zona: "merah", dpt_count: 245, last_updated_by: "Admin DPC", last_updated_date: "2026-06-02" },
-  { id: "tps-md-1", nama_tps: "TPS 01 Madukara", kecamatan: "Madukara", desa: "Madukara", lat: -7.3689, lng: 109.7289, zona: "hijau", dpt_count: 200, last_updated_by: "Korcam Madukara", last_updated_date: "2026-06-02" },
-  { id: "tps-md-2", nama_tps: "TPS 02 Madukara", kecamatan: "Madukara", desa: "Clapar", lat: -7.3700, lng: 109.7350, zona: "kuning", dpt_count: 175, last_updated_by: "Admin DPC", last_updated_date: "2026-05-29" }
+  { id: "tps-bna-1", nama_tps: "TPS 01 Banjarnegara", kecamatan: "Banjarnegara", desa: "Krandegan", lat: -7.3996, lng: 109.6976, zona: "merah", dpt_count: 250, last_updated_by: "Admin DPC", last_updated_date: "2026-06-02", saksi1_id: "m-4", saksi1_name: "Sri Rahayu", saksi1_status: "terlatih", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" },
+  { id: "tps-bna-2", nama_tps: "TPS 02 Banjarnegara", kecamatan: "Banjarnegara", desa: "Semarang", lat: -7.4020, lng: 109.6900, zona: "kuning", dpt_count: 220, last_updated_by: "Korcam BNA", last_updated_date: "2026-06-01", saksi1_id: null, saksi1_name: null, saksi1_status: "belum_pelatihan", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" },
+  { id: "tps-bawang-1", nama_tps: "TPS 01 Bawang", kecamatan: "Bawang", desa: "Mantrianom", lat: -7.4110, lng: 109.6600, zona: "hijau", dpt_count: 190, last_updated_by: "Admin DPC", last_updated_date: "2026-05-30", saksi1_id: "m-4", saksi1_name: "Sri Rahayu", saksi1_status: "terlatih", saksi2_id: "m-3", saksi2_name: "Budi Santoso", saksi2_status: "terlatih" },
+  { id: "tps-bawang-2", nama_tps: "TPS 02 Bawang", kecamatan: "Bawang", desa: "Bawang", lat: -7.4200, lng: 109.6550, zona: "merah", dpt_count: 280, last_updated_by: "Ketua PAC Bawang", last_updated_date: "2026-06-01", saksi1_id: "m-3", saksi1_name: "Budi Santoso", saksi1_status: "belum_pelatihan", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" },
+  { id: "tps-puj-1", nama_tps: "TPS 01 Punggelan", kecamatan: "Punggelan", desa: "Punggelan", lat: -7.3195, lng: 109.5841, zona: "kuning", dpt_count: 210, last_updated_by: "Admin DPC", last_updated_date: "2026-05-28", saksi1_id: null, saksi1_name: null, saksi1_status: "belum_pelatihan", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" },
+  { id: "tps-puj-2", nama_tps: "TPS 02 Punggelan", kecamatan: "Punggelan", desa: "Tanjungtirta", lat: -7.3210, lng: 109.5800, zona: "merah", dpt_count: 245, last_updated_by: "Admin DPC", last_updated_date: "2026-06-02", saksi1_id: null, saksi1_name: null, saksi1_status: "belum_pelatihan", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" },
+  { id: "tps-md-1", nama_tps: "TPS 01 Madukara", kecamatan: "Madukara", desa: "Madukara", lat: -7.3689, lng: 109.7289, zona: "hijau", dpt_count: 200, last_updated_by: "Korcam Madukara", last_updated_date: "2026-06-02", saksi1_id: null, saksi1_name: null, saksi1_status: "belum_pelatihan", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" },
+  { id: "tps-md-2", nama_tps: "TPS 02 Madukara", kecamatan: "Madukara", desa: "Clapar", lat: -7.3700, lng: 109.7350, zona: "kuning", dpt_count: 175, last_updated_by: "Admin DPC", last_updated_date: "2026-05-29", saksi1_id: null, saksi1_name: null, saksi1_status: "belum_pelatihan", saksi2_id: null, saksi2_name: null, saksi2_status: "belum_pelatihan" }
 ];
 
 app.get('/api/tps-mapping', async (req, res) => {
@@ -1236,9 +1269,9 @@ app.get('/api/tps-mapping', async (req, res) => {
       console.log('tps_mapping table is empty. Auto-seeding default TPS mapping data...');
       for (const t of DEFAULT_TPS_MAPPING) {
         await pool.query(
-          `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [t.id, t.nama_tps, t.kecamatan, t.desa, t.lat, t.lng, t.zona, t.dpt_count, t.last_updated_by, t.last_updated_date]
+          `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date, saksi1_id, saksi1_name, saksi1_status, saksi2_id, saksi2_name, saksi2_status) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [t.id, t.nama_tps, t.kecamatan, t.desa, t.lat, t.lng, t.zona, t.dpt_count, t.last_updated_by, t.last_updated_date, t.saksi1_id, t.saksi1_name, t.saksi1_status, t.saksi2_id, t.saksi2_name, t.saksi2_status]
         );
       }
       // Re-fetch rows
@@ -1255,7 +1288,13 @@ app.get('/api/tps-mapping', async (req, res) => {
       zona: r.zona,
       dptCount: r.dpt_count,
       lastUpdatedBy: r.last_updated_by,
-      lastUpdatedDate: r.last_updated_date
+      lastUpdatedDate: r.last_updated_date,
+      saksi1Id: r.saksi1_id,
+      saksi1Name: r.saksi1_name,
+      saksi1Status: r.saksi1_status,
+      saksi2Id: r.saksi2_id,
+      saksi2Name: r.saksi2_name,
+      saksi2Status: r.saksi2_status
     }));
     res.json(tpsMapping);
   } catch (error) {
@@ -1267,8 +1306,8 @@ app.post('/api/tps-mapping', async (req, res) => {
   try {
     const tps = req.body;
     await pool.query(
-      `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date, saksi1_id, saksi1_name, saksi1_status, saksi2_id, saksi2_name, saksi2_status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          nama_tps = VALUES(nama_tps),
          kecamatan = VALUES(kecamatan),
@@ -1278,8 +1317,14 @@ app.post('/api/tps-mapping', async (req, res) => {
          zona = VALUES(zona),
          dpt_count = VALUES(dpt_count),
          last_updated_by = VALUES(last_updated_by),
-         last_updated_date = VALUES(last_updated_date)`,
-      [tps.id, tps.namaTps, tps.kecamatan, tps.desa, tps.lat, tps.lng, tps.zona, tps.dptCount, tps.lastUpdatedBy, tps.lastUpdatedDate]
+         last_updated_date = VALUES(last_updated_date),
+         saksi1_id = VALUES(saksi1_id),
+         saksi1_name = VALUES(saksi1_name),
+         saksi1_status = VALUES(saksi1_status),
+         saksi2_id = VALUES(saksi2_id),
+         saksi2_name = VALUES(saksi2_name),
+         saksi2_status = VALUES(saksi2_status)`,
+      [tps.id, tps.namaTps, tps.kecamatan, tps.desa, tps.lat, tps.lng, tps.zona, tps.dptCount, tps.lastUpdatedBy, tps.lastUpdatedDate, tps.saksi1Id || null, tps.saksi1Name || null, tps.saksi1Status || 'belum_pelatihan', tps.saksi2Id || null, tps.saksi2Name || null, tps.saksi2Status || 'belum_pelatihan']
     );
     res.json({ success: true, tpsMapping: tps });
   } catch (error) {
@@ -1290,11 +1335,55 @@ app.post('/api/tps-mapping', async (req, res) => {
 app.put('/api/tps-mapping/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { zona, lastUpdatedBy, lastUpdatedDate } = req.body;
-    await pool.query(
-      'UPDATE tps_mapping SET zona = ?, last_updated_by = ?, last_updated_date = ? WHERE id = ?',
-      [zona, lastUpdatedBy, lastUpdatedDate, id]
-    );
+    const { zona, lastUpdatedBy, lastUpdatedDate, saksi1Id, saksi1Name, saksi1Status, saksi2Id, saksi2Name, saksi2Status } = req.body;
+    
+    let updateFields = [];
+    let updateValues = [];
+    
+    if (zona !== undefined) {
+      updateFields.push('zona = ?');
+      updateValues.push(zona);
+    }
+    if (lastUpdatedBy !== undefined) {
+      updateFields.push('last_updated_by = ?');
+      updateValues.push(lastUpdatedBy);
+    }
+    if (lastUpdatedDate !== undefined) {
+      updateFields.push('last_updated_date = ?');
+      updateValues.push(lastUpdatedDate);
+    }
+    if (saksi1Id !== undefined) {
+      updateFields.push('saksi1_id = ?');
+      updateValues.push(saksi1Id);
+    }
+    if (saksi1Name !== undefined) {
+      updateFields.push('saksi1_name = ?');
+      updateValues.push(saksi1Name);
+    }
+    if (saksi1Status !== undefined) {
+      updateFields.push('saksi1_status = ?');
+      updateValues.push(saksi1Status);
+    }
+    if (saksi2Id !== undefined) {
+      updateFields.push('saksi2_id = ?');
+      updateValues.push(saksi2Id);
+    }
+    if (saksi2Name !== undefined) {
+      updateFields.push('saksi2_name = ?');
+      updateValues.push(saksi2Name);
+    }
+    if (saksi2Status !== undefined) {
+      updateFields.push('saksi2_status = ?');
+      updateValues.push(saksi2Status);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(id);
+      await pool.query(
+        `UPDATE tps_mapping SET ${updateFields.join(', ')} WHERE id = ?`,
+        updateValues
+      );
+    }
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1319,7 +1408,7 @@ const DEFAULT_DDS_LOGS = [
     kader_id: "member-3",
     kader_name: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     resident_name: "Bapak Maryono",
     phone: "081234567890",
     notes: "Keluarga Bapak Maryono membutuhkan bantuan bibit padi unggul. Sangat respek dengan PDI-P.",
@@ -1333,7 +1422,7 @@ const DEFAULT_DDS_LOGS = [
     kader_id: "member-3",
     kader_name: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     resident_name: "Ibu Sumarni",
     phone: "081398765432",
     notes: "Ibu Sumarni menyampaikan aspirasi perbaikan selokan jalan desa. Sudah ber-KTA.",
@@ -1347,7 +1436,7 @@ const DEFAULT_DDS_LOGS = [
     kader_id: "member-3",
     kader_name: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     resident_name: "Bapak Slamet",
     phone: "085600112233",
     notes: "Sosialisasi program kartu tani PDIP. Respon warga sangat positif dan antusias.",
@@ -1578,7 +1667,7 @@ const DEFAULT_ADVOCACY_TICKETS = [
     kader_id: "member-3",
     kader_name: "Budi Santoso",
     kecamatan: "Banjarnegara",
-    desa: "Krangandipan",
+    desa: "Krandegan",
     photo_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80",
     created_at: "2026-06-02T12:30:00.000Z",
     dewan_notes: "Usulan beasiswa PIP sudah diverifikasi oleh tim Fraksi dan saat ini berkas sedang dikoordinasikan dengan Dinas Pendidikan Kabupaten Banjarnegara untuk dicairkan pada termin berikutnya.",
