@@ -1,10 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Calculator, Save, RefreshCw, BarChart2, Shield, Filter } from 'lucide-react';
-
-const PARTIES = [
-  'PKB', 'GERINDRA', 'PDIP', 'GOLKAR', 'NASDEM', 'BURUH', 'GELORA', 'PKS',
-  'PKN', 'HANURA', 'GARUDA', 'PAN', 'PBB', 'DEMOKRAT', 'PSI', 'PERINDO', 'PPP', 'UMMAT'
-];
+import { useState, useMemo } from 'react';
+import { Calculator, RefreshCw, Shield, Filter } from 'lucide-react';
 
 type PartyData = {
   name: string;

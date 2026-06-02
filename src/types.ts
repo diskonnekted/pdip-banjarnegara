@@ -148,6 +148,7 @@ export interface PartyActivity {
   budgetOther: number;
   budgetTotal: number;
   reportDescription?: string;
+  reportPhoto?: string;
 }
 
 export interface TpsMapping {
