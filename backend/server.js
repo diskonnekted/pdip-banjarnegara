@@ -113,7 +113,7 @@ app.post('/api/seed', async (req, res) => {
       quickCounts, 
       memberReports, 
       privateMessages,
-      operational_funds,
+      operationalFunds,
       logisticsStockHistory,
       activities,
       tpsMapping
@@ -974,9 +974,35 @@ app.delete('/api/activities/:id', async (req, res) => {
 
 // ==================== 13. TPS MAPPING ROUTE ====================
 
+const DEFAULT_TPS_MAPPING = [
+  { id: "tps-bna-1", nama_tps: "TPS 01 Banjarnegara", kecamatan: "Banjarnegara", desa: "Krangandipan", lat: -7.3996, lng: 109.6976, zona: "merah", dpt_count: 250, last_updated_by: "Admin DPC", last_updated_date: "2026-06-02" },
+  { id: "tps-bna-2", nama_tps: "TPS 02 Banjarnegara", kecamatan: "Banjarnegara", desa: "Semampir", lat: -7.4020, lng: 109.6900, zona: "kuning", dpt_count: 220, last_updated_by: "Korcam BNA", last_updated_date: "2026-06-01" },
+  { id: "tps-bawang-1", nama_tps: "TPS 01 Bawang", kecamatan: "Bawang", desa: "Mantrianom", lat: -7.4110, lng: 109.6600, zona: "hijau", dpt_count: 190, last_updated_by: "Admin DPC", last_updated_date: "2026-05-30" },
+  { id: "tps-bawang-2", nama_tps: "TPS 02 Bawang", kecamatan: "Bawang", desa: "Bawang", lat: -7.4200, lng: 109.6550, zona: "merah", dpt_count: 280, last_updated_by: "Ketua PAC Bawang", last_updated_date: "2026-06-01" },
+  { id: "tps-puj-1", nama_tps: "TPS 01 Punggelan", kecamatan: "Punggelan", desa: "Punggelan", lat: -7.3195, lng: 109.5841, zona: "kuning", dpt_count: 210, last_updated_by: "Admin DPC", last_updated_date: "2026-05-28" },
+  { id: "tps-puj-2", nama_tps: "TPS 02 Punggelan", kecamatan: "Punggelan", desa: "Tanjungtirta", lat: -7.3210, lng: 109.5800, zona: "merah", dpt_count: 245, last_updated_by: "Admin DPC", last_updated_date: "2026-06-02" },
+  { id: "tps-md-1", nama_tps: "TPS 01 Madukara", kecamatan: "Madukara", desa: "Madukara", lat: -7.3689, lng: 109.7289, zona: "hijau", dpt_count: 200, last_updated_by: "Korcam Madukara", last_updated_date: "2026-06-02" },
+  { id: "tps-md-2", nama_tps: "TPS 02 Madukara", kecamatan: "Madukara", desa: "Clapar", lat: -7.3700, lng: 109.7350, zona: "kuning", dpt_count: 175, last_updated_by: "Admin DPC", last_updated_date: "2026-05-29" }
+];
+
 app.get('/api/tps-mapping', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM tps_mapping');
+    let [rows] = await pool.query('SELECT * FROM tps_mapping');
+    
+    // Auto-seed if table is empty
+    if (rows.length === 0) {
+      console.log('tps_mapping table is empty. Auto-seeding default TPS mapping data...');
+      for (const t of DEFAULT_TPS_MAPPING) {
+        await pool.query(
+          `INSERT INTO tps_mapping (id, nama_tps, kecamatan, desa, lat, lng, zona, dpt_count, last_updated_by, last_updated_date) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [t.id, t.nama_tps, t.kecamatan, t.desa, t.lat, t.lng, t.zona, t.dpt_count, t.last_updated_by, t.last_updated_date]
+        );
+      }
+      // Re-fetch rows
+      [rows] = await pool.query('SELECT * FROM tps_mapping');
+    }
+
     const tpsMapping = rows.map(r => ({
       id: r.id,
       namaTps: r.nama_tps,
