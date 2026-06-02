@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Map, BookOpen, Truck, MessageSquare, BarChart3, Plus, Search, Calendar,
   MapPin, Award, Settings, ListCollapse, LogOut, Lock, Mail, Wallet, Coins,
-  Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye
+  Upload, Shield, RefreshCw, Send, Trash2, GitFork, ChevronDown, ChevronRight as ChevronRightIcon, Eye, Calculator
 } from 'lucide-react';
+import SainteLagueCalculator from './components/SainteLagueCalculator';
 import confetti from 'canvas-confetti';
 import { MapContainer, TileLayer, Marker, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
@@ -887,7 +888,7 @@ export default function App() {
   const [loginError, setLoginError] = useState('');
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'keanggotaan' | 'gis' | 'kaderisasi' | 'logistik' | 'aspirasi' | 'quickcount' | 'analitik' | 'dpt' | 'laporan' | 'perpesanan' | 'pengaturan' | 'pendanaan' | 'kegiatan' | 'sainte-lague'>('dashboard');
 
   // Keanggotaan sub-tab: list vs tree viewer
   const [memberViewMode, setMemberViewMode] = useState<'list' | 'tree'>('list');
@@ -3348,6 +3349,7 @@ export default function App() {
               { id: 'aspirasi', label: 'Aspirasi & DPRD', icon: MessageSquare },
               { id: 'kegiatan', label: 'Manajemen Kegiatan', icon: Calendar },
               { id: 'quickcount', label: 'TPS & Quick Count C1', icon: RefreshCw },
+              { id: 'sainte-lague', label: 'Simulasi Sainte-Laguë', icon: Calculator },
               ...((currentUser.role === 'super_admin' || currentUser.role === 'pimpinan_dpc' || currentUser.role === 'admin_logistik') ? [
                 { id: 'pendanaan', label: 'Dana Operasional', icon: Wallet }
               ] : []),
@@ -5709,6 +5711,11 @@ export default function App() {
                 ))}
             </div>
           </div>
+        )}
+
+        {/* ==================== SAINTE LAGUE CALCULATOR VIEW ==================== */}
+        {activeTab === 'sainte-lague' && (
+          <SainteLagueCalculator />
         )}
 
         {/* ==================== PRIVATE MESSAGING VIEW ==================== */}
