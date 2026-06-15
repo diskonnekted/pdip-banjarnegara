@@ -2788,7 +2788,7 @@ export default function App() {
           {/* Logo at top left */}
           <div className="absolute top-8 left-8 sm:left-12 flex items-center gap-3">
             <img 
-              src="/logo.png" 
+              src="/login.png" 
               alt="PDI Perjuangan" 
               className="w-10 h-10 object-contain"
             />

@@ -1,0 +1,36 @@
+Berdasarkan analisa komprehensif dari dokumen **LAPORAN KETUA DPC PDI PERJUANGAN KABUPATEN BANJARNEGARA.pdf** dan lampiran strategi Dapil, sebenarnya aplikasi *dashboard* yang sedang Anda bangun ini sudah merangkum banyak hal (seperti GIS, Quick Count C1, dan Simulasi Sainte-Laguë). 
+
+Namun, mengacu pada instruksi spesifik di laporan tersebut (khususnya bagian **Dinamika Politik**, **Rencana Program Kerja**, dan **Strategi Pilkada 2029**), berikut adalah usulan fitur-fitur strategis krusial yang bisa ditambahkan ke dalam aplikasi ini agar selaras 100% dengan "Buku Putih" pemenangan DPC:
+
+### 1. Modul "Tracker" Pencapaian Target KTA (Gamifikasi Rekrutmen)
+*   **Dasar Laporan:** Halaman 2 menyebutkan "Jumlah Anggota ber-KTA: 5.403" sedangkan "Target KTA: 40.000". Ada jarak (gap) sekitar 34.000 anggota yang harus direkrut.
+*   **Ide Fitur:** Sebuah *dashboard* berbentuk *progress bar* besar (seperti termometer pencapaian) yang diperbarui secara *real-time* setiap kali kader di bawah mendaftarkan anggota baru. Sistem dapat memberikan "Peringkat Kader Rekruter Terbaik" (Leaderboard) di setiap kecamatan untuk memicu militansi.
+
+### 2. Modul Pemetaan TPS (Zona Merah, Kuning, Hijau)
+*   **Dasar Laporan:** Tabel Strategi Pilkada poin 3C (Politik) menginstruksikan adanya "Mapping TPS (merah, kuning, hijau)" serta "Identifikasi *swing voters*".
+*   **Ide Fitur:** Integrasi ke tab **GIS & Peta Sebaran** saat ini. Anda bisa menambahkan layer khusus peta TPS Banjarnegara. Ketua Ranting/PAC dapat mewarnai TPS mereka di peta digital:
+    *   🔴 **Merah:** Basis loyalis kuat (Kandang Banteng)
+    *   🟡 **Kuning:** *Swing voters* / persaingan ketat
+    *   🟢 **Hijau:** Basis partai lawan
+    *   Jika TPS diklik, muncul persentase kemenangan historis (2024).
+
+### 3. Log Harian Kampanye "Door-to-Door" (DDS Tracker)
+*   **Dasar Laporan:** Tabel Strategi Pemenangan poin 4A mengamanatkan metode *Door to Door* (DDS) dengan KPI ketat: **"Minimal 10 rumah/kader/hari"**.
+*   **Ide Fitur:** Fitur "Absensi Lapangan" berbasis GPS *(Geotagging)*. Kader di lapangan bisa membuka aplikasi di HP, menekan tombol "Check-in Kunjungan", memfoto rumah/warga yang dikunjungi, lalu melampirkan catatan kecil (misal: "Keluarga Bapak Budi, butuh bantuan pupuk"). Admin DPC bisa memonitor kader mana yang memenuhi target 10 rumah per hari.
+
+### 4. Modul Advokasi Rakyat (Manajemen Bantuan Sosial)
+*   **Dasar Laporan:** Program Kerja Prioritas Menengah (2027-2028) sangat menekankan "Advokasi Bantuan: KIP, PIP, BPJS" serta "Program Gotong Royong (Air Bersih, Perbaikan Jalan)".
+*   **Ide Fitur:** Sebuah *ticketing system* (sistem pelacakan kasus). Jika kader menemukan warga sakit tanpa BPJS atau anak putus sekolah, kader menginput data warga ke sistem. Statusnya bisa dilacak: `[Diusulkan] ➔ [Diproses oleh Fraksi/DPRD] ➔ [Selesai/Bantuan Cair]`. Ini membuktikan narasi "Partai yang Hadir Nyata" secara digital.
+
+### 5. Dasbor Milestone Timeline Triwulanan (2026 - 2029)
+*   **Dasar Laporan:** Terdapat jadwal ketat dari Tahun 2026 (Konsolidasi Organisasi) hingga 2029 (Mobilisasi Total). 
+*   **Ide Fitur:** Tab khusus **Timeline Strategis**. Fitur ini seperti kalender *Project Management* (misal: Trello/Jira). Saat memasuki "TW II 2027", sistem akan mengingatkan DPC bahwa target saat itu adalah "Sekolah kader ideologi PAC". DPC bisa mencentang (*checklist*) jika program tersebut sudah terlaksana.
+
+### 6. Dasbor Kesembilan (Manajemen Penempatan Saksi 100%)
+*   **Dasar Laporan:** Target saksi adalah **"100% TPS ada saksi (2 Saksi per TPS)"** dengan pelatihan penghitungan suara yang teknis.
+*   **Ide Fitur:** Modul alokasi saksi. Menampilkan baris per baris ribuan TPS di Banjarnegara. Sistem akan mendeteksi (dengan warna merah muda) jika ada TPS yang slot saksinya (Slot 1 & Slot 2) masih kosong atau belum diisi oleh kader terverifikasi.
+
+**Rekomendasi Eksekusi Terdekat:**
+Jika Anda tertarik, fitur yang paling cepat bisa kita implementasikan (dan *impact*-nya sangat besar untuk evaluasi DPC) adalah **Modul Pemetaan TPS (Zona Merah, Kuning, Hijau) pada fitur GIS** atau **Tracker Pencapaian KTA (Target 40.000)**. 
+
+Mana yang ingin kita bangun skripnya terlebih dahulu?
