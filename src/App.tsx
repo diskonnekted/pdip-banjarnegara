@@ -2843,19 +2843,6 @@ export default function App() {
                 Sign In / Masuk
               </button>
 
-              <div className="flex items-center gap-3 my-6 pt-4">
-                <div className="flex-1 h-px bg-gray-200"></div>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest">ATAU MASUK DENGAN</span>
-                <div className="flex-1 h-px bg-gray-200"></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsMobileDevice(!isMobileDevice)}
-                className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 rounded-md text-xs font-bold transition flex items-center justify-center gap-2"
-              >
-                {isMobileDevice ? "💻 Beralih Tampilan Desktop" : "📱 Beralih Tampilan Mobile"}
-              </button>
             </form>
           </div>
         </div>
