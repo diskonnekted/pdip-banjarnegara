@@ -2780,84 +2780,98 @@ export default function App() {
   // Render Login Page if not logged in
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pdip-black via-red-950/25 to-pdip-black flex flex-col justify-center items-center p-6 font-sans">
+      <div className="min-h-screen w-full flex font-sans bg-white">
         
-        {/* Brand Header */}
-        <div className="flex items-center gap-3.5 mb-8 animate-fadeIn">
-          <img 
-            src="/logo.png" 
-            alt="PDI Perjuangan" 
-            className="w-16 h-16 object-contain filter drop-shadow-2xl"
-          />
-          <div>
-            <h1 className="font-serif font-black text-2xl tracking-widest text-white leading-tight">PDI PERJUANGAN</h1>
-            <p className="text-xs text-red-500 uppercase tracking-widest font-semibold mt-0.5">DPC KAB. BANJARNEGARA</p>
-          </div>
-        </div>
-
-        {/* Login Card */}
-        <div className="w-full max-w-md bg-pdip-metal border border-red-900/20 rounded-2xl p-8 shadow-2xl space-y-6 relative overflow-hidden animate-scaleUp">
-          <div className="space-y-1 text-center">
-            <h2 className="text-xl font-bold text-white tracking-wide">Masuk Portal Pemenangan</h2>
-            <p className="text-xs text-gray-400">Silakan gunakan KTA atau NIK Anda untuk mengakses dasbor.</p>
+        {/* Left Side (Form) */}
+        <div className="w-full lg:w-5/12 flex flex-col justify-center px-8 sm:px-16 lg:px-24 bg-white relative z-10">
+          
+          {/* Logo at top left */}
+          <div className="absolute top-8 left-8 sm:left-12 flex items-center gap-3">
+            <img 
+              src="/logo.png" 
+              alt="PDI Perjuangan" 
+              className="w-10 h-10 object-contain"
+            />
+            <div>
+              <h1 className="font-serif font-black text-lg tracking-widest text-gray-900 leading-none">PDI PERJUANGAN</h1>
+              <p className="text-[10px] text-pdip-red uppercase tracking-widest font-bold mt-0.5">DPC KAB. BANJARNEGARA</p>
+            </div>
           </div>
 
-          {loginError && (
-            <div className="p-3.5 bg-red-950/50 border border-red-900/40 rounded-lg text-xs text-red-400 font-medium">
-              ⚠️ {loginError}
-            </div>
-          )}
-
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs text-gray-400 font-semibold block">No. KTA atau NIK:</label>
-              <input
-                type="text"
-                required
-                value={loginIdentifier}
-                onChange={(e) => setLoginIdentifier(e.target.value)}
-                placeholder="Contoh: KTA-3304-001 / 3304..."
-                className="w-full bg-pdip-black border border-red-900/35 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-pdip-red transition"
-              />
+          <div className="w-full max-w-sm mx-auto space-y-8 animate-fadeIn mt-24 lg:mt-0">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Mulai perjalanan Anda</p>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tight">Masuk Portal Pemenangan</h2>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs text-gray-400 font-semibold block flex justify-between">
-                <span>Password Sandi:</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Masukkan password Anda..."
-                  className="w-full bg-pdip-black border border-red-900/35 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-pdip-red transition"
-                />
-                <span className="absolute inset-y-0 left-3 flex items-center text-gray-500">
-                  <Lock size={15} />
-                </span>
+            {loginError && (
+              <div className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 font-medium">
+                ⚠️ {loginError}
               </div>
-            </div>
+            )}
 
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-pdip-red to-pdip-darkred hover:from-pdip-brightred hover:to-pdip-red text-white py-3 rounded-lg text-sm font-bold shadow-lg shadow-red-950/30 transition duration-200"
-            >
-              Sign In / Masuk
-            </button>
+            <form onSubmit={handleLoginSubmit} className="space-y-6">
+              <div className="space-y-1.5 relative mt-2">
+                <label className="text-xs text-pdip-red font-bold absolute -top-2 left-3 bg-white px-1 z-10">No. KTA atau NIK</label>
+                <input
+                  type="text"
+                  required
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  placeholder="Contoh: KTA-3304-001 / 3304..."
+                  className="w-full bg-white border-2 border-gray-200 rounded-lg px-4 py-3.5 text-sm text-gray-800 focus:outline-none focus:border-pdip-red transition shadow-sm"
+                />
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setIsMobileDevice(!isMobileDevice)}
-              className="w-full bg-transparent border border-red-900/40 text-red-400 hover:text-white hover:bg-red-950/30 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
-            >
-              {isMobileDevice ? "💻 Aktifkan Tampilan Desktop" : "📱 Aktifkan Tampilan Mobile (HP)"}
-            </button>
-          </form>
+              <div className="space-y-1.5 relative mt-2">
+                <label className="text-xs text-pdip-red font-bold absolute -top-2 left-3 bg-white px-1 z-10">Password Sandi</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Masukkan password Anda..."
+                    className="w-full bg-white border-2 border-gray-200 rounded-lg pl-10 pr-4 py-3.5 text-sm text-gray-800 focus:outline-none focus:border-pdip-red transition shadow-sm"
+                  />
+                  <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    <Lock size={16} />
+                  </span>
+                </div>
+              </div>
 
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-pdip-red to-pdip-darkred hover:from-pdip-brightred hover:to-pdip-red text-white py-3.5 rounded-lg text-sm font-bold shadow-lg shadow-red-500/30 transition duration-200 mt-2"
+              >
+                Sign In / Masuk
+              </button>
 
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-px bg-gray-200"></div>
+                <span className="text-xs text-gray-400 uppercase tracking-widest">Atau masuk dengan</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileDevice(!isMobileDevice)}
+                className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"
+              >
+                {isMobileDevice ? "💻 Beralih Tampilan Desktop" : "📱 Beralih Tampilan Mobile"}
+              </button>
+            </form>
+          </div>
         </div>
+
+        {/* Right Side (Image) */}
+        <div className="hidden lg:block lg:w-7/12 relative bg-pdip-black overflow-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.1)]">
+          <div 
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 hover:scale-105"
+            style={{ backgroundImage: 'url("/login-bg.png")' }}
+          ></div>
+        </div>
+
       </div>
     );
   }
