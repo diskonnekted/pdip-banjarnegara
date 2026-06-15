@@ -2824,7 +2824,6 @@ export default function App() {
             <div className="space-y-1.5">
               <label className="text-xs text-gray-400 font-semibold block flex justify-between">
                 <span>Password Sandi:</span>
-                <span className="text-[10px] text-gray-500 font-normal italic">Demo: 123456</span>
               </label>
               <div className="relative">
                 <input
@@ -2857,40 +2856,7 @@ export default function App() {
             </button>
           </form>
 
-          {/* Demo account helper panel */}
-          <div className="pt-4 border-t border-red-950/20">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wide mb-2.5">
-              <Shield size={12} /> Akun Demo Uji Coba:
-            </div>
-            <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1">
-              {[
-                { name: "Super Admin", role: "SUPER ADMIN", id: "ADMIN-3304-001" },
-                { name: "H. Nuryanto, S.Sos.", role: "PIMPINAN DPC", id: "KTA-3304-0001" },
-                { name: "Adi Wijaya", role: "ADMIN LOGISTIK", id: "KTA-3304-9999" },
-                { name: "Budi Santoso", role: "KORCAM BAWANG", id: "KTA-3304-0105" },
-                { name: "Sri Rahayu", role: "KETUA RANTING", id: "KTA-3304-0320" },
-                { name: "Joko Susilo", role: "RELAWAN TPS", id: "KTA-3304-0982" },
-              ].map((acc, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setLoginIdentifier(acc.id);
-                    setLoginPassword('123456');
-                  }}
-                  className="w-full text-left p-2 bg-pdip-black/50 hover:bg-red-950/15 border border-red-900/10 hover:border-red-900/35 rounded-lg flex justify-between items-center text-[10px] transition"
-                >
-                  <div>
-                    <span className="font-bold text-white block">{acc.name}</span>
-                    <span className="text-gray-500 font-mono">{acc.id}</span>
-                  </div>
-                  <span className="bg-red-950 text-red-400 font-bold px-1.5 py-0.5 rounded text-[8px] tracking-wider border border-red-900/25">
-                    {acc.role}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
       </div>
     );

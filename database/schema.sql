@@ -1,6 +1,4 @@
 -- Schema database untuk Sistem Informasi Pemenangan PDI Perjuangan Banjarnegara
-CREATE DATABASE IF NOT EXISTS pdip_banjarnegara;
-USE pdip_banjarnegara;
 
 -- 1. Tabel Members (Keanggotaan)
 CREATE TABLE IF NOT EXISTS members (
