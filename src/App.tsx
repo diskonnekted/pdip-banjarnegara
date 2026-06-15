@@ -2816,7 +2816,7 @@ export default function App() {
                 required
                 value={loginIdentifier}
                 onChange={(e) => setLoginIdentifier(e.target.value)}
-                placeholder="Contoh: ADMIN-3304-001 / 3304..."
+                placeholder="Contoh: KTA-3304-001 / 3304..."
                 className="w-full bg-pdip-black border border-red-900/35 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-pdip-red transition"
               />
             </div>
