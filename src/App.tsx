@@ -2868,7 +2868,7 @@ export default function App() {
         <div className="hidden lg:block lg:w-7/12 relative bg-pdip-black overflow-hidden shadow-[-10px_0_30px_rgba(0,0,0,0.1)]">
           <div 
             className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 hover:scale-105"
-            style={{ backgroundImage: 'url("/login-bg.png")' }}
+            style={{ backgroundImage: 'url("/login.jpg")' }}
           ></div>
         </div>
 
