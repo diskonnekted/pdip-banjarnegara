@@ -2783,25 +2783,28 @@ export default function App() {
       <div className="min-h-screen w-full flex font-sans bg-white">
         
         {/* Left Side (Form) */}
-        <div className="w-full lg:w-5/12 flex flex-col justify-center px-8 sm:px-16 lg:px-24 bg-white relative z-10">
+        <div className="w-full lg:w-5/12 flex flex-col justify-center px-8 sm:px-12 lg:px-20 bg-white relative z-10">
           
-          {/* Logo at top left */}
-          <div className="absolute top-8 left-8 sm:left-12 flex items-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="PDI Perjuangan" 
-              className="w-10 h-10 object-contain"
-            />
-            <div>
-              <h1 className="font-serif font-black text-lg tracking-widest text-gray-900 leading-none">PDI PERJUANGAN</h1>
-              <p className="text-[10px] text-pdip-red uppercase tracking-widest font-bold mt-0.5">DPC KAB. BANJARNEGARA</p>
+          <div className="w-full max-w-md mx-auto space-y-8 animate-fadeIn">
+            
+            {/* Logo inline with content */}
+            <div className="flex items-center gap-4 mb-4">
+              <img 
+                src="/logo.png" 
+                alt="PDI Perjuangan" 
+                className="w-14 h-14 object-contain"
+              />
+              <div>
+                <h1 className="font-serif font-black text-3xl tracking-widest text-gray-900 leading-none">PDI PERJUANGAN</h1>
+                <p className="text-xs text-pdip-red uppercase tracking-widest font-bold mt-1">DPC KAB. BANJARNEGARA</p>
+              </div>
             </div>
-          </div>
 
-          <div className="w-full max-w-sm mx-auto space-y-8 animate-fadeIn mt-24 lg:mt-0">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Mulai perjalanan Anda</p>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tight">Masuk Portal Pemenangan</h2>
+            <div className="space-y-4">
+              <h2 className="text-[22px] font-bold text-gray-700 tracking-tight">Selamat Datang di Portal Pemenangan PDI-P</h2>
+              <p className="text-[15px] text-gray-500 leading-relaxed">
+                Untuk meningkatkan kemudahan akses dan keamanan, sistem ini menggunakan konsep Single Sign-On (SSO), yang memungkinkan pengguna mengakses seluruh fitur dengan satu akun terverifikasi.
+              </p>
             </div>
 
             {loginError && (
@@ -2810,53 +2813,46 @@ export default function App() {
               </div>
             )}
 
-            <form onSubmit={handleLoginSubmit} className="space-y-6">
-              <div className="space-y-1.5 relative mt-2">
-                <label className="text-xs text-pdip-red font-bold absolute -top-2 left-3 bg-white px-1 z-10">No. KTA atau NIK</label>
+            <form onSubmit={handleLoginSubmit} className="space-y-6 pt-4">
+              <div className="space-y-1.5">
                 <input
                   type="text"
                   required
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
-                  placeholder="Contoh: KTA-3304-001 / 3304..."
-                  className="w-full bg-white border-2 border-gray-200 rounded-lg px-4 py-3.5 text-sm text-gray-800 focus:outline-none focus:border-pdip-red transition shadow-sm"
+                  placeholder="Masukkan No. KTA atau NIK..."
+                  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-pdip-red focus:ring-1 focus:ring-pdip-red transition"
                 />
               </div>
 
-              <div className="space-y-1.5 relative mt-2">
-                <label className="text-xs text-pdip-red font-bold absolute -top-2 left-3 bg-white px-1 z-10">Password Sandi</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Masukkan password Anda..."
-                    className="w-full bg-white border-2 border-gray-200 rounded-lg pl-10 pr-4 py-3.5 text-sm text-gray-800 focus:outline-none focus:border-pdip-red transition shadow-sm"
-                  />
-                  <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
-                    <Lock size={16} />
-                  </span>
-                </div>
+              <div className="space-y-1.5">
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Masukkan password Anda..."
+                  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-sm text-gray-700 focus:outline-none focus:border-pdip-red focus:ring-1 focus:ring-pdip-red transition"
+                />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-pdip-red to-pdip-darkred hover:from-pdip-brightred hover:to-pdip-red text-white py-3.5 rounded-lg text-sm font-bold shadow-lg shadow-red-500/30 transition duration-200 mt-2"
+                className="w-full bg-pdip-red hover:bg-pdip-darkred text-white py-3.5 rounded-md text-sm font-bold shadow transition duration-200"
               >
                 Sign In / Masuk
               </button>
 
-              <div className="flex items-center gap-3 my-6">
+              <div className="flex items-center gap-3 my-6 pt-4">
                 <div className="flex-1 h-px bg-gray-200"></div>
-                <span className="text-xs text-gray-400 uppercase tracking-widest">Atau masuk dengan</span>
+                <span className="text-[10px] text-gray-400 uppercase tracking-widest">ATAU MASUK DENGAN</span>
                 <div className="flex-1 h-px bg-gray-200"></div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsMobileDevice(!isMobileDevice)}
-                className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"
+                className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 rounded-md text-xs font-bold transition flex items-center justify-center gap-2"
               >
                 {isMobileDevice ? "💻 Beralih Tampilan Desktop" : "📱 Beralih Tampilan Mobile"}
               </button>
